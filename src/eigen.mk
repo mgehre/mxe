@@ -3,21 +3,30 @@
 
 PKG             := eigen
 $(PKG)_IGNORE   :=
-$(PKG)_CHECKSUM := 7e1674420a8eef7e90e1875ef5b9e828fb9db381
-$(PKG)_SUBDIR   := $(PKG)-$(PKG)-b23437e61a07
-$(PKG)_FILE     := $($(PKG)_VERSION).tar.gz
-$(PKG)_URL      := https://bitbucket.org/$(PKG)/$(PKG)/get/$($(PKG)_FILE)
+$(PKG)_VERSION  := 3.2.5
+$(PKG)_CHECKSUM := aa4667f0b134f5688c5dff5f03335d9a19aa9b3d
+$(PKG)_SUBDIR   := $(PKG)-$(PKG)-bdd17ee3b1b3
+$(PKG)_FILE     := $(PKG)-$($(PKG)_VERSION).tar.bz2
+$(PKG)_URL      := https://bitbucket.org/$(PKG)/$(PKG)/get/$($(PKG)_VERSION).tar.bz2
 $(PKG)_DEPS     := gcc
 
 define $(PKG)_UPDATE
-    wget -q -O- 'http://eigen.tuxfamily.org/index.php?title=Main_Page#Download' | \
+    $(WGET) -q -O- 'http://eigen.tuxfamily.org/index.php?title=Main_Page#Download' | \
     grep 'eigen/get/' | \
-    $(SED) -n 's,.*eigen/get/\(2[^>]*\)\.tar.*,\1,p' | \
+    $(SED) -n 's,.*eigen/get/\(3[^>]*\)\.tar.*,\1,p' | \
     head -1
 endef
 
 define $(PKG)_BUILD
-    cd '$(1)' && \
-    cmake . -DCMAKE_TOOLCHAIN_FILE='$(CMAKE_TOOLCHAIN_FILE)'
-    $(MAKE) -C '$(1)' -j '$(JOBS)' install
+    cd '$(1)' && mkdir build && cd build && cmake .. \
+        -DCMAKE_TOOLCHAIN_FILE='$(CMAKE_TOOLCHAIN_FILE)' \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DEIGEN_BUILD_PKGCONFIG=ON \
+        -Drun_res=1 -Drun_res__TRYRUN_OUTPUT=""
+    $(MAKE) -C '$(1)'/build -j '$(JOBS)' install VERBOSE=1
+
+    '$(TARGET)-g++' -W -Wall '$(2).cpp' -o \
+        '$(PREFIX)/$(TARGET)/bin/test-$(PKG).exe' \
+        `'$(TARGET)-pkg-config' --cflags --libs eigen3`
 endef
+

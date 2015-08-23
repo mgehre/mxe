@@ -3,17 +3,14 @@
 
 PKG             := gst-plugins-good
 $(PKG)_IGNORE   :=
-$(PKG)_CHECKSUM := 9c78a751bb2f20ad50a1daf6860e0098e0495f5a
+$(PKG)_VERSION  := 1.4.4
+$(PKG)_CHECKSUM := b2c1691bd13d4567788dcb3af49a99401f057112
 $(PKG)_SUBDIR   := $(PKG)-$($(PKG)_VERSION)
-$(PKG)_FILE     := $(PKG)-$($(PKG)_VERSION).tar.bz2
+$(PKG)_FILE     := $(PKG)-$($(PKG)_VERSION).tar.xz
 $(PKG)_URL      := http://gstreamer.freedesktop.org/src/$(PKG)/$($(PKG)_FILE)
-$(PKG)_DEPS     := gcc glib libxml2 gstreamer gst-plugins-base liboil libshout cairo flac gtk2 jpeg libpng speex taglib
+$(PKG)_DEPS     := gcc glib libxml2 gstreamer gst-plugins-base liboil libshout cairo flac gtk2 jpeg libpng speex taglib wavpack
 
-define $(PKG)_UPDATE
-    wget -q -O- 'http://cgit.freedesktop.org/gstreamer/gst-plugins-good/refs/tags' | \
-    $(SED) -n "s,.*<a href='[^']*/tag/?id=[^0-9]*\\([0-9][^']*\\)'.*,\\1,p" | \
-    head -1
-endef
+$(PKG)_UPDATE = $(subst gstreamer/refs,gst-plugins-good/refs,$(gstreamer_UPDATE))
 
 define $(PKG)_BUILD
     find '$(1)' -name Makefile.in \
@@ -24,11 +21,11 @@ define $(PKG)_BUILD
     #   http://lists.mplayerhq.hu/pipermail/mplayer-cvslog/2004-August/019283.html
     cd '$(1)' && ./configure \
         --host='$(TARGET)' \
+        --build="`config.guess`" \
         --prefix='$(PREFIX)/$(TARGET)' \
         --disable-shared \
         --disable-debug \
         --disable-examples \
-        --disable-esd \
         --disable-aalib \
         --disable-x \
         --mandir='$(1)/sink' \
@@ -36,3 +33,5 @@ define $(PKG)_BUILD
         --with-html-dir='$(1)/sink'
     $(MAKE) -C '$(1)' -j '$(JOBS)' install CFLAGS='-DWAVE_FORMAT_DOLBY_AC3_SPDIF=0x0092'
 endef
+
+$(PKG)_BUILD_SHARED =

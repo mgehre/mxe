@@ -3,14 +3,15 @@
 
 PKG             := freeglut
 $(PKG)_IGNORE   :=
-$(PKG)_CHECKSUM := 4debbe559c6c9841ce1abaddc9d461d17c6083b1
+$(PKG)_VERSION  := 2.8.1
+$(PKG)_CHECKSUM := 7330b622481e2226c0c9f6d2e72febe96b03f9c4
 $(PKG)_SUBDIR   := freeglut-$(word 1,$(subst -, ,$($(PKG)_VERSION)))
 $(PKG)_FILE     := freeglut-$($(PKG)_VERSION).tar.gz
 $(PKG)_URL      := http://$(SOURCEFORGE_MIRROR)/project/freeglut/freeglut/$($(PKG)_VERSION)/$($(PKG)_FILE)
 $(PKG)_DEPS     := gcc
 
 define $(PKG)_UPDATE
-    wget -q -O- 'http://sourceforge.net/projects/freeglut/files/freeglut/' | \
+    $(WGET) -q -O- 'http://sourceforge.net/projects/freeglut/files/freeglut/' | \
     $(SED) -n 's,.*freeglut-\([0-9][^>]*\)\.tar.*,\1,p' | \
     head -1
 endef
@@ -18,14 +19,11 @@ endef
 define $(PKG)_BUILD
     cd '$(1)' && ./autogen.sh
     cd '$(1)' && ./configure \
-        --host='$(TARGET)' \
-        --disable-shared \
-        --prefix='$(PREFIX)/$(TARGET)' \
+        $(MXE_CONFIGURE_OPTS) \
         --enable-replace-glut \
         --disable-debug \
-        --without-progs \
         --without-x
-    $(MAKE) -C '$(1)' -j '$(JOBS)' install bin_PROGRAMS= sbin_PROGRAMS= noinst_PROGRAMS= EXPORT_FLAGS='-DFREEGLUT_STATIC'
+    $(MAKE) -C '$(1)' -j '$(JOBS)' install bin_PROGRAMS= sbin_PROGRAMS= noinst_PROGRAMS= $(if $(BUILD_STATIC),EXPORT_FLAGS='-DFREEGLUT_STATIC')
 
     '$(TARGET)-gcc' \
         -W -Wall -Werror -ansi -pedantic \

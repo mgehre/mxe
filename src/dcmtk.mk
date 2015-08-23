@@ -3,6 +3,7 @@
 
 PKG             := dcmtk
 $(PKG)_IGNORE   :=
+$(PKG)_VERSION  := 3.6.0
 $(PKG)_CHECKSUM := 469e017cffc56f36e834aa19c8612111f964f757
 $(PKG)_SUBDIR   := $(PKG)-$($(PKG)_VERSION)
 $(PKG)_FILE     := $(PKG)-$($(PKG)_VERSION).tar.gz
@@ -11,12 +12,13 @@ $(PKG)_URL_2    := http://ftp.debian.org/debian/pool/main/d/$(PKG)/$(PKG)_$($(PK
 $(PKG)_DEPS     := gcc openssl tiff libpng libxml2 zlib
 
 define $(PKG)_UPDATE
-    wget -q -O- 'http://dicom.offis.de/dcmtk.php.en' | \
+    $(WGET) -q -O- 'http://dicom.offis.de/dcmtk.php.en' | \
     $(SED) -n 's,.*/dcmtk-\([0-9][^"]*\)\.tar.*,\1,p' | \
     head -1
 endef
 
 define $(PKG)_BUILD
+    cd '$(1)'/config && autoconf -f
     cd '$(1)' && ./configure \
         --host='$(TARGET)' \
         --prefix='$(PREFIX)/$(TARGET)' \
@@ -35,3 +37,5 @@ define $(PKG)_BUILD
         ac_cv_my_c_rightshift_unsigned=no
     $(MAKE) -C '$(1)' -j '$(JOBS)' install-lib
 endef
+
+$(PKG)_BUILD_SHARED =

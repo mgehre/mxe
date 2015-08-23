@@ -3,24 +3,24 @@
 
 PKG             := sqlite
 $(PKG)_IGNORE   :=
-$(PKG)_CHECKSUM := a768f76b10df84d6a2c66178544d42725a8fdaf0
+$(PKG)_VERSION  := 3081101
+$(PKG)_CHECKSUM := d0e22d7e361b6f50830a3cdeafe35311443f8f9a
 $(PKG)_SUBDIR   := $(PKG)-autoconf-$($(PKG)_VERSION)
 $(PKG)_FILE     := $(PKG)-autoconf-$($(PKG)_VERSION).tar.gz
-$(PKG)_URL      := http://www.sqlite.org/$($(PKG)_FILE)
+$(PKG)_URL      := http://www.sqlite.org/2015/$($(PKG)_FILE)
 $(PKG)_DEPS     := gcc
 
 define $(PKG)_UPDATE
-    wget -q -O- 'http://www.sqlite.org/download.html' | \
+    $(WGET) -q -O- 'http://www.sqlite.org/download.html' | \
     $(SED) -n 's,.*sqlite-autoconf-\([0-9][^>]*\)\.tar.*,\1,p' | \
     head -1
 endef
 
 define $(PKG)_BUILD
     cd '$(1)' && ./configure \
-        --host='$(TARGET)' \
-        --disable-shared \
-        --prefix='$(PREFIX)/$(TARGET)' \
+        $(MXE_CONFIGURE_OPTS) \
         --disable-readline \
-        --disable-threadsafe
-    $(MAKE) -C '$(1)' -j '$(JOBS)' install bin_PROGRAMS= sbin_PROGRAMS= noinst_PROGRAMS=
+        --enable-threadsafe \
+        CFLAGS="-Os"
+    $(MAKE) -C '$(1)' -j 1 install
 endef

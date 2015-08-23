@@ -3,19 +3,20 @@
 
 PKG             := postgresql
 $(PKG)_IGNORE   :=
-$(PKG)_CHECKSUM := 1cf3044415df807c08bb8ad8e40e24e8d375cf34
+$(PKG)_VERSION  := 9.2.4
+$(PKG)_CHECKSUM := 75b53c884cb10ed9404747b51677358f12082152
 $(PKG)_SUBDIR   := postgresql-$($(PKG)_VERSION)
 $(PKG)_FILE     := postgresql-$($(PKG)_VERSION).tar.bz2
 $(PKG)_URL      := http://ftp.postgresql.org/pub/source/v$($(PKG)_VERSION)/$($(PKG)_FILE)
 $(PKG)_DEPS     := gcc zlib openssl
 
 define $(PKG)_UPDATE
-    wget -q -O- 'http://git.postgresql.org/gitweb?p=postgresql.git;a=tags' | \
+    $(WGET) -q -O- 'http://git.postgresql.org/gitweb?p=postgresql.git;a=tags' | \
     grep 'refs/tags/REL9[0-9_]*"' | \
     $(SED) 's,.*refs/tags/REL\(.*\)".*,\1,g;' | \
     $(SED) 's,_,.,g' | \
-    grep -v '^9\.\0' | \
-    head -1
+    $(SORT) -V | \
+    tail -1
 endef
 
 define $(PKG)_BUILD
@@ -23,9 +24,7 @@ define $(PKG)_BUILD
     cp -Rp '$(1)' '$(1).native'
     # Since we build only client libary, use bogus tzdata to satisfy configure.
     cd '$(1)' && ./configure \
-        --prefix='$(PREFIX)/$(TARGET)' \
-        --host='$(TARGET)' \
-        --disable-shared \
+        $(MXE_CONFIGURE_OPTS) \
         --disable-rpath \
         --without-tcl \
         --without-perl \
@@ -42,12 +41,15 @@ define $(PKG)_BUILD
         --without-libxslt \
         --with-zlib \
         --with-system-tzdata=/dev/null \
-        LIBS="-lsecur32 `'$(TARGET)-pkg-config' openssl --libs`"
-    $(MAKE) -C '$(1)'/src/interfaces/libpq -j '$(JOBS)' install haslibarule= shlib=
-    $(MAKE) -C '$(1)'/src/port             -j '$(JOBS)'         haslibarule= shlib=
-    $(MAKE) -C '$(1)'/src/bin/psql         -j '$(JOBS)' install haslibarule= shlib=
+        LIBS="-lsecur32 `'$(TARGET)-pkg-config' openssl --libs`" \
+        ac_cv_func_getaddrinfo=no
+    $(MAKE) -C '$(1)'/src/interfaces/libpq -j '$(JOBS)' install
+    $(MAKE) -C '$(1)'/src/port             -j '$(JOBS)'
+    $(MAKE) -C '$(1)'/src/bin/psql         -j '$(JOBS)' install
     $(INSTALL) -m644 '$(1)/src/include/pg_config.h'    '$(PREFIX)/$(TARGET)/include/'
     $(INSTALL) -m644 '$(1)/src/include/postgres_ext.h' '$(PREFIX)/$(TARGET)/include/'
+    $(INSTALL) -d    '$(PREFIX)/$(TARGET)/include/libpq'
+    $(INSTALL) -m644 '$(1)'/src/include/libpq/*        '$(PREFIX)/$(TARGET)/include/libpq/'
     # Build a native pg_config.
     $(SED) -i 's,-DVAL_,-D_DISABLED_VAL_,g' '$(1).native'/src/bin/pg_config/Makefile
     cd '$(1).native' && ./configure \
@@ -73,3 +75,4 @@ define $(PKG)_BUILD
     $(MAKE) -C '$(1).native'/src/bin/pg_config -j '$(JOBS)' install
     ln -sf '$(PREFIX)/$(TARGET)/bin/pg_config' '$(PREFIX)/bin/$(TARGET)-pg_config'
 endef
+

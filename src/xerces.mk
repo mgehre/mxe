@@ -3,15 +3,15 @@
 
 PKG             := xerces
 $(PKG)_IGNORE   :=
-$(PKG)_CHECKSUM := 177ec838c5119df57ec77eddec9a29f7e754c8b2
+$(PKG)_VERSION  := 3.1.2
+$(PKG)_CHECKSUM := 3f9ecc4956df069c1d95b885fc687eb4e474a4ad
 $(PKG)_SUBDIR   := xerces-c-$($(PKG)_VERSION)
 $(PKG)_FILE     := xerces-c-$($(PKG)_VERSION).tar.gz
-$(PKG)_URL      := http://apache.linux-mirror.org/xerces/c/$(word 1,$(subst ., ,$($(PKG)_VERSION)))/sources/$($(PKG)_FILE)
-$(PKG)_URL_2    := http://www.apache.org/dist/xerces/c/$(word 1,$(subst ., ,$($(PKG)_VERSION)))/sources/$($(PKG)_FILE)
-$(PKG)_DEPS     := gcc libiconv curl
+$(PKG)_URL      := http://www.apache.org/dist/xerces/c/$(word 1,$(subst ., ,$($(PKG)_VERSION)))/sources/$($(PKG)_FILE)
+$(PKG)_DEPS     := gcc libiconv curl pthreads
 
 define $(PKG)_UPDATE
-    wget -q -O- 'http://www.apache.org/dist/xerces/c/3/sources/?C=M;O=D' | \
+    $(WGET) -q -O- 'http://www.apache.org/dist/xerces/c/3/sources/?C=M;O=D' | \
     $(SED) -n 's,.*<a href="xerces-c-\([0-9][^"]*\)\.tar.*,\1,p' | \
     grep -v rc | \
     head -1
@@ -25,7 +25,7 @@ define $(PKG)_BUILD
         --prefix='$(PREFIX)/$(TARGET)' \
         --enable-libtool-lock \
         --disable-pretty-make \
-        --disable-threads \
+        --enable-threads \
         --enable-network \
         --enable-netaccessor-curl \
         --disable-netaccessor-socket \
@@ -50,3 +50,5 @@ define $(PKG)_BUILD
         '$(2).cpp' -o '$(PREFIX)/$(TARGET)/bin/test-xerces.exe' \
         `'$(TARGET)-pkg-config' xerces-c --cflags --libs`
 endef
+
+$(PKG)_BUILD_SHARED =

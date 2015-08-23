@@ -3,23 +3,26 @@
 
 PKG             := gc
 $(PKG)_IGNORE   :=
-$(PKG)_CHECKSUM := e84cba5d18f4ea5ed4e5fd3f1dc6a46bc190ff6f
-$(PKG)_SUBDIR   := $(PKG)-$($(PKG)_VERSION)
+$(PKG)_VERSION  := 7.2e
+$(PKG)_CHECKSUM := 3ad593c6d0ed9c0951c21a657b86c55dab6365c8
+$(PKG)_SUBDIR   := $(PKG)-7.2
 $(PKG)_FILE     := $(PKG)-$($(PKG)_VERSION).tar.gz
-$(PKG)_URL      := http://www.hpl.hp.com/personal/Hans_Boehm/$(PKG)/$(PKG)_source/$($(PKG)_FILE)
+$(PKG)_URL      := http://hboehm.info/$(PKG)/$(PKG)_source/$($(PKG)_FILE)
 $(PKG)_DEPS     := gcc
 
 define $(PKG)_UPDATE
-    wget -q -O- 'http://www.hpl.hp.com/personal/Hans_Boehm/gc/gc_source/?C=M;O=D' | \
+    $(WGET) -q -O- 'http://hboehm.info/gc/gc_source/' | \
     grep '<a href="gc-' | \
     $(SED) -n 's,.*<a href="gc-\([0-9][^"]*\)\.tar.*,\1,p' | \
     grep -v 'alpha' | \
+    $(SORT) -Vr | \
     head -1
 endef
 
 define $(PKG)_BUILD
     cd '$(1)' && ./configure \
         --host='$(TARGET)' \
+        --build="`config.guess`" \
         --prefix='$(PREFIX)/$(TARGET)' \
         --disable-shared \
         --enable-threads=win32 \
@@ -27,3 +30,5 @@ define $(PKG)_BUILD
     $(MAKE) -C '$(1)' -j '$(JOBS)'
     $(MAKE) -C '$(1)' -j 1 install
 endef
+
+$(PKG)_BUILD_SHARED =

@@ -3,16 +3,19 @@
 
 PKG             := zziplib
 $(PKG)_IGNORE   :=
-$(PKG)_CHECKSUM := ddbce25cb36c3b4c2b892e2c8a88fa4a0be29a71
+$(PKG)_VERSION  := 0.13.62
+$(PKG)_CHECKSUM := cf8b642abd9db618324a1b98cc71492a007cd687
 $(PKG)_SUBDIR   := $(PKG)-$($(PKG)_VERSION)
 $(PKG)_FILE     := $(PKG)-$($(PKG)_VERSION).tar.bz2
 $(PKG)_URL      := http://$(SOURCEFORGE_MIRROR)/project/$(PKG)/$(PKG)$(word 2,$(subst ., ,$($(PKG)_VERSION)))/$($(PKG)_VERSION)/$($(PKG)_FILE)
 $(PKG)_DEPS     := gcc zlib
 
 define $(PKG)_UPDATE
-    wget -q -O- 'http://sourceforge.net/projects/zziplib/files/' | \
-    $(SED) -n 's,.*zziplib-\([0-9][^>]*\)\.tar.*,\1,p' | \
-    head -1
+    $(WGET) -q -O- 'http://sourceforge.net/p/zziplib/svn/HEAD/tree/tags/' | \
+    $(SED) -n 's,.*<a href="V_\([0-9][^"]*\)">.*,\1,p' | \
+    tr '_' '.' | \
+    $(SORT) -V | \
+    tail -1
 endef
 
 define $(PKG)_BUILD
@@ -20,10 +23,12 @@ define $(PKG)_BUILD
     (echo '# DISABLED'; echo 'all:'; echo 'install:') > '$(1)/docs/Makefile.in'
     cd '$(1)' && ./configure \
         --host='$(TARGET)' \
-        --disable-mmap \
         --disable-shared \
         --prefix='$(PREFIX)/$(TARGET)' \
+        CFLAGS="-O -ggdb" \
         PKG_CONFIG='$(TARGET)-pkg-config'
     $(MAKE) -C '$(1)' -j '$(JOBS)' bin_PROGRAMS= sbin_PROGRAMS= noinst_PROGRAMS=
     $(MAKE) -C '$(1)' -j 1 install bin_PROGRAMS= sbin_PROGRAMS= noinst_PROGRAMS=
 endef
+
+$(PKG)_BUILD_SHARED =

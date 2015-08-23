@@ -3,24 +3,22 @@
 
 PKG             := xz
 $(PKG)_IGNORE   :=
-$(PKG)_CHECKSUM := 50ce842bea6519537457d9ad90d110a127656786
+$(PKG)_VERSION  := 5.2.1
+$(PKG)_CHECKSUM := 6022493efb777ff4e872b63a60be1f1e146f3c0b
 $(PKG)_SUBDIR   := $(PKG)-$($(PKG)_VERSION)
 $(PKG)_FILE     := $(PKG)-$($(PKG)_VERSION).tar.gz
 $(PKG)_URL      := http://tukaani.org/xz/$($(PKG)_FILE)
 $(PKG)_DEPS     := gcc
 
 define $(PKG)_UPDATE
-    wget -q -O- 'http://tukaani.org/xz/' | \
+    $(WGET) -q -O- 'http://tukaani.org/xz/' | \
     $(SED) -n 's,.*xz-\([0-9][^>]*\)\.tar.*,\1,p' | \
     head -1
 endef
 
 define $(PKG)_BUILD
     cd '$(1)' && ./configure \
-        --host='$(TARGET)' \
-        --prefix='$(PREFIX)/$(TARGET)' \
-        --disable-shared \
-        --disable-dynamic \
+        $(MXE_CONFIGURE_OPTS) \
         --disable-threads \
         --disable-nls
     $(MAKE) -C '$(1)'/src/liblzma -j '$(JOBS)' install

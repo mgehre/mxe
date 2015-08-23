@@ -3,14 +3,15 @@
 
 PKG             := matio
 $(PKG)_IGNORE   :=
-$(PKG)_CHECKSUM := 721b9b57f2437850dd114acca1f422622e2c47e2
+$(PKG)_VERSION  := 1.5.2
+$(PKG)_CHECKSUM := d5a83a51eb2550d75811d2dde967ef3e167d4f52
 $(PKG)_SUBDIR   := $(PKG)-$($(PKG)_VERSION)
 $(PKG)_FILE     := $(PKG)-$($(PKG)_VERSION).tar.gz
 $(PKG)_URL      := http://$(SOURCEFORGE_MIRROR)/project/$(PKG)/$(PKG)/$($(PKG)_VERSION)/$($(PKG)_FILE)
-$(PKG)_DEPS     := gcc zlib
+$(PKG)_DEPS     := gcc zlib hdf5
 
 define $(PKG)_UPDATE
-    wget -q -O- 'http://sourceforge.net/projects/matio/files/matio/' | \
+    $(WGET) -q -O- 'http://sourceforge.net/projects/matio/files/matio/' | \
     $(SED) -n 's,.*/\([0-9][^"]*\)/".*,\1,p' | \
     head -1
 endef
@@ -18,10 +19,11 @@ endef
 define $(PKG)_BUILD
     cd '$(1)' && ./configure \
         --host='$(TARGET)' \
+        --build="`config.guess`" \
         --prefix='$(PREFIX)/$(TARGET)' \
-        --disable-shared \
-        --disable-test \
-        --disable-docs
+        --disable-shared
     $(MAKE) -C '$(1)' -j '$(JOBS)'
     $(MAKE) -C '$(1)' -j 1 install
 endef
+
+$(PKG)_BUILD_SHARED =

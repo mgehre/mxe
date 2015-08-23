@@ -2,27 +2,27 @@
 # See index.html for further information.
 
 PKG             := gdb
-$(PKG)_CHECKSUM := 43a3ee582eae4d69c2babea4f8700b7bec8e37fa
+$(PKG)_VERSION  := 7.9.1
+$(PKG)_CHECKSUM := 04ba2906279b16b5f99c4f6b25942843a3717cdb
 $(PKG)_SUBDIR   := gdb-$($(PKG)_VERSION)
-$(PKG)_FILE     := gdb-$($(PKG)_VERSION).tar.bz2
-$(PKG)_URL      := ftp://ftp.gnu.org/pub/gnu/$(PKG)/$($(PKG)_FILE)
+$(PKG)_FILE     := gdb-$($(PKG)_VERSION).tar.xz
+$(PKG)_URL      := http://ftp.gnu.org/pub/gnu/$(PKG)/$($(PKG)_FILE)
 $(PKG)_URL_2    := ftp://ftp.cs.tu-berlin.de/pub/gnu/$(PKG)/$($(PKG)_FILE)
-$(PKG)_DEPS     := gcc expat libiconv zlib
+$(PKG)_DEPS     := gcc expat libiconv readline zlib
 
 define $(PKG)_UPDATE
-    wget -q -O- 'http://ftp.gnu.org/gnu/gdb/?C=M;O=D' | \
+    $(WGET) -q -O- 'http://ftp.gnu.org/gnu/gdb/?C=M;O=D' | \
     $(SED) -n 's,.*<a href="gdb-\([0-9][^"]*\)\.tar.*,\1,p' | \
-    grep -v '^7\.3a' | \
-    sort -r | \
-    head -1
+    $(SORT) -V | \
+    tail -1
 endef
 
 define $(PKG)_BUILD
     cd '$(1)' && ./configure \
-        --host='$(TARGET)' \
-        --disable-shared \
-        --prefix='$(PREFIX)/$(TARGET)' \
+        $(MXE_CONFIGURE_OPTS) \
+        --with-system-readline \
         CONFIG_SHELL=$(SHELL)
     $(MAKE) -C '$(1)' -j '$(JOBS)'
-    $(MAKE) -C '$(1)' -j 1 install
+    $(MAKE) -C '$(1)' -j 1 install MAKEINFO=true
 endef
+

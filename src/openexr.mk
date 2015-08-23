@@ -3,20 +3,23 @@
 
 PKG             := openexr
 $(PKG)_IGNORE   :=
-$(PKG)_CHECKSUM := 91d0d4e69f06de956ec7e0710fc58ec0d4c4dc2b
+$(PKG)_VERSION  := 2.2.0
+$(PKG)_CHECKSUM := d09a68c4443b7a12a0484c073adaef348b44cb92
 $(PKG)_SUBDIR   := openexr-$($(PKG)_VERSION)
 $(PKG)_FILE     := openexr-$($(PKG)_VERSION).tar.gz
 $(PKG)_URL      := http://download.savannah.nongnu.org/releases/openexr/$($(PKG)_FILE)
 $(PKG)_DEPS     := gcc ilmbase pthreads zlib
 
 define $(PKG)_UPDATE
-    wget -q -O- 'http://www.openexr.com/downloads.html' | \
+    $(WGET) -q -O- 'http://www.openexr.com/downloads.html' | \
     grep 'openexr-' | \
     $(SED) -n 's,.*openexr-\([0-9][^>]*\)\.tar.*,\1,p' | \
     head -1
 endef
 
 define $(PKG)_BUILD
+    # Update auto-stuff, except autoheader, because if fails...
+    cd '$(1)' && AUTOHEADER=true autoreconf -fi
     # unpack and build a native version of ilmbase
     cd '$(1)' && $(call UNPACK_PKG_ARCHIVE,ilmbase)
     $(foreach PKG_PATCH,$(sort $(wildcard $(TOP_DIR)/src/ilmbase-*.patch)),
@@ -28,25 +31,37 @@ define $(PKG)_BUILD
         --prefix='$(1)/ilmbase' \
         --enable-threading=no \
         --disable-posix-sem \
-        CONFIG_SHELL=$(SHELL)
+        CONFIG_SHELL=$(SHELL) \
+        SHELL=$(SHELL)
     $(MAKE) -C '$(1)/$(ilmbase_SUBDIR)' -j '$(JOBS)' install \
         bin_PROGRAMS= sbin_PROGRAMS= noinst_PROGRAMS=
     cd '$(1)' && ./configure \
-        --host='$(TARGET)' \
-        --build="`config.guess`" \
-        --disable-shared \
-        --prefix='$(PREFIX)/$(TARGET)' \
+        $(MXE_CONFIGURE_OPTS) \
         --disable-threading \
         --disable-posix-sem \
         --disable-ilmbasetest \
-        PKG_CONFIG='$(PREFIX)/bin/$(TARGET)-pkg-config'
+        PKG_CONFIG='$(PREFIX)/bin/$(TARGET)-pkg-config' \
+        CXXFLAGS="-g -O2 -fpermissive"
     # build the code generator manually
-    cd '$(1)/IlmImf' && g++ \
+    cd '$(1)/IlmImf' && g++ -O2 \
         -I'$(1)/ilmbase/include/OpenEXR' \
         -L'$(1)/ilmbase/lib' \
         b44ExpLogTable.cpp \
-        -lImath -lHalf -lIex -lIlmThread -lpthread \
+        -lHalf \
         -o b44ExpLogTable
     '$(1)/IlmImf/b44ExpLogTable' > '$(1)/IlmImf/b44ExpLogTable.h'
+    cd '$(1)/IlmImf' && g++ -O2 \
+        -I'$(1)/config' -I. \
+        -I'$(1)/ilmbase/include/OpenEXR' \
+        -L'$(1)/ilmbase/lib' \
+        dwaLookups.cpp \
+        -lHalf -lIlmThread -lIex -lpthread \
+        -o dwaLookups
+    '$(1)/IlmImf/dwaLookups' > '$(1)/IlmImf/dwaLookups.h'
     $(MAKE) -C '$(1)' -j '$(JOBS)' install bin_PROGRAMS= sbin_PROGRAMS= noinst_PROGRAMS=
+
+    '$(TARGET)-g++' \
+        -Wall -Wextra -std=gnu++0x \
+        '$(2).cpp' -o '$(PREFIX)/$(TARGET)/bin/test-openexr.exe' \
+        `'$(TARGET)-pkg-config' OpenEXR --cflags --libs`
 endef

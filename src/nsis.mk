@@ -3,6 +3,7 @@
 
 PKG             := nsis
 $(PKG)_IGNORE   :=
+$(PKG)_VERSION  := 2.46
 $(PKG)_CHECKSUM := 2cc9bff130031a0b1d76b01ec0a9136cdf5992ce
 $(PKG)_SUBDIR   := nsis-$($(PKG)_VERSION)-src
 $(PKG)_FILE     := nsis-$($(PKG)_VERSION)-src.tar.bz2
@@ -10,10 +11,10 @@ $(PKG)_URL      := http://$(SOURCEFORGE_MIRROR)/project/nsis/NSIS 2/$($(PKG)_VER
 $(PKG)_DEPS     := gcc
 
 define $(PKG)_UPDATE
-    wget -q -O- 'http://nsis.svn.sourceforge.net/viewvc/nsis/NSIS/tags/?sortby=date' | \
-    grep '<a name="' | \
-    $(SED) -n 's,.*<a name="v\([0-9]\)\([^"]*\)".*,\1.\2,p' | \
-    head -1
+    $(WGET) -q -O- 'http://sourceforge.net/p/nsis/code/HEAD/tree/NSIS/tags/' | \
+    grep '<a href="' | \
+    $(SED) -n 's,.*<a href="v\([0-9]\)\([^"]*\)".*,\1.\2,p' | \
+    tail -1
 endef
 
 define $(PKG)_BUILD
@@ -26,3 +27,5 @@ define $(PKG)_BUILD
         install
     $(INSTALL) -m755 '$(PREFIX)/$(TARGET)/bin/makensis' '$(PREFIX)/bin/$(TARGET)-makensis'
 endef
+
+$(PKG)_BUILD_x86_64-w64-mingw32 =

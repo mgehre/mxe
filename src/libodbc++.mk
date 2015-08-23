@@ -3,6 +3,7 @@
 
 PKG             := libodbc++
 $(PKG)_IGNORE   :=
+$(PKG)_VERSION  := 0.2.5
 $(PKG)_CHECKSUM := 8a77921b21c23926042c413f4a7a187a3656025b
 $(PKG)_SUBDIR   := libodbc++-$($(PKG)_VERSION)
 $(PKG)_FILE     := libodbc++-$($(PKG)_VERSION).tar.bz2
@@ -10,9 +11,9 @@ $(PKG)_URL      := http://$(SOURCEFORGE_MIRROR)/project/libodbcxx/libodbc++/$($(
 $(PKG)_DEPS     := gcc
 
 define $(PKG)_UPDATE
-    wget -q -O- 'http://libodbcxx.svn.sourceforge.net/viewvc/libodbcxx/tags/?sortby=date' | \
-    grep '<a name="' | \
-    $(SED) -n 's,.*<a name="libodbc++-\([0-9][^"]*\)".*,\1,p' | \
+    $(WGET) -q -O- "http://sourceforge.net/projects/libodbcxx/files/libodbc%2B%2B" | \
+    grep 'libodbcxx/files/libodbc%2B%2B/' | \
+    $(SED) -n 's,.*/\([0-9][^>]*\)/.*,\1,p' | \
     head -1
 endef
 
@@ -29,3 +30,5 @@ define $(PKG)_BUILD
       --disable-dependency-tracking
     $(MAKE) -C '$(1)' -j '$(JOBS)' install doxygen= progref_dist_files=
 endef
+
+$(PKG)_BUILD_SHARED =

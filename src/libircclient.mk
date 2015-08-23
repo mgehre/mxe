@@ -2,16 +2,18 @@
 # See index.html for further information.
 
 # Note that IPv6 support is partly broken and therefore disabled.
+
 PKG             := libircclient
 $(PKG)_IGNORE   :=
-$(PKG)_CHECKSUM := 10fb7a2478f6d668dce2d7fb5cd5a35ea8f53ed4
+$(PKG)_VERSION  := 1.8
+$(PKG)_CHECKSUM := dda7df9fd9239542d295759033d7b518f0b3efd9
 $(PKG)_SUBDIR   := $(PKG)-$($(PKG)_VERSION)
 $(PKG)_FILE     := $(PKG)-$($(PKG)_VERSION).tar.gz
 $(PKG)_URL      := http://$(SOURCEFORGE_MIRROR)/project/$(PKG)/$(PKG)/$($(PKG)_VERSION)/$($(PKG)_FILE)
 $(PKG)_DEPS     := gcc
 
 define $(PKG)_UPDATE
-    wget -q -O- 'http://sourceforge.net/projects/libircclient/files/libircclient/' | \
+    $(WGET) -q -O- 'http://sourceforge.net/projects/libircclient/files/libircclient/' | \
     $(SED) -n 's,.*/\([0-9][^"]*\)/".*,\1,p' | \
     head -1
 endef
@@ -38,3 +40,5 @@ define $(PKG)_BUILD
         '$(2).cpp' -o '$(PREFIX)/$(TARGET)/bin/test-libircclient.exe' \
         -lircclient -lws2_32
 endef
+
+$(PKG)_BUILD_SHARED =

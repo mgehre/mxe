@@ -3,27 +3,24 @@
 
 PKG             := fltk
 $(PKG)_IGNORE   :=
-$(PKG)_CHECKSUM := 720f2804be6132ebae9909d4e74dedcc00b39d25
+$(PKG)_VERSION  := 1.3.3
+$(PKG)_CHECKSUM := 873aac49b277149e054b9740378e2ca87b0bd435
 $(PKG)_SUBDIR   := $(PKG)-$($(PKG)_VERSION)
 $(PKG)_FILE     := $($(PKG)_SUBDIR)-source.tar.gz
-$(PKG)_URL      := http://ftp.easysw.com/pub/fltk/$($(PKG)_VERSION)/$($(PKG)_FILE)
+$(PKG)_URL      := http://fltk.org/pub/fltk/$($(PKG)_VERSION)/$($(PKG)_FILE)
 $(PKG)_DEPS     := gcc zlib jpeg libpng pthreads
 
 define $(PKG)_UPDATE
-    wget -q -O- 'http://www.fltk.org/' | \
+    $(WGET) -q -O- 'http://www.fltk.org/' | \
     $(SED) -n 's,.*>v\([0-9][^<]*\)<.*,\1,p' | \
     grep -v '^1\.1\.' | \
     head -1
 endef
 
 define $(PKG)_BUILD
-    cd '$(1)' && autoconf
     $(SED) -i 's,\$$uname,MINGW,g' '$(1)/configure'
     cd '$(1)' && ./configure \
-        --host='$(TARGET)' \
-        --build="`config.guess`" \
-        --disable-shared \
-        --prefix='$(PREFIX)/$(TARGET)' \
+        $(MXE_CONFIGURE_OPTS) \
         --enable-threads \
         LIBS='-lws2_32'
     # enable exceptions, because disabling them doesn't make any sense on PCs
@@ -34,5 +31,5 @@ define $(PKG)_BUILD
     '$(TARGET)-g++' \
         -W -Wall -Werror -pedantic -ansi \
         '$(2).cpp' -o '$(PREFIX)/$(TARGET)/bin/test-fltk.exe' \
-        `$(TARGET)-fltk-config --cxxflags --ldstaticflags`
+        `$(TARGET)-fltk-config --cxxflags --ld$(if $(BUILD_STATIC),static)flags`
 endef

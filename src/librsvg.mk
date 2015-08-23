@@ -3,32 +3,30 @@
 
 PKG             := librsvg
 $(PKG)_IGNORE   :=
-$(PKG)_CHECKSUM := 11a2dc00c813da13532d7f16a822b414201e8b1b
+$(PKG)_VERSION  := 2.40.5
+$(PKG)_CHECKSUM := f78def208b4f01d22da616e341a3835490ab2ef4
 $(PKG)_SUBDIR   := librsvg-$($(PKG)_VERSION)
 $(PKG)_FILE     := librsvg-$($(PKG)_VERSION).tar.xz
 $(PKG)_URL      := http://ftp.gnome.org/pub/GNOME/sources/librsvg/$(call SHORT_PKG_VERSION,$(PKG))/$($(PKG)_FILE)
-$(PKG)_DEPS     := gcc glib libgsf cairo pango gtk2 libcroco
+$(PKG)_DEPS     := gcc glib libgsf cairo pango gdk-pixbuf libcroco
 
 define $(PKG)_UPDATE
-    wget -q -O- 'http://git.gnome.org/browse/librsvg/refs/tags' | \
+    $(WGET) -q -O- 'http://git.gnome.org/browse/librsvg/refs/tags' | \
     $(SED) -n 's,.*<a[^>]*>\([0-9][^<]*\).*,\1,p' | \
     head -1
 endef
 
 define $(PKG)_BUILD
     cd '$(1)' && ./configure \
-        --host='$(TARGET)' \
-        --build="`config.guess`" \
-        --disable-shared \
-        --prefix='$(PREFIX)/$(TARGET)' \
+        $(MXE_CONFIGURE_OPTS) \
         --disable-pixbuf-loader \
-        --disable-gtk-theme \
         --disable-gtk-doc \
         --enable-introspection=no
     $(MAKE) -C '$(1)' -j '$(JOBS)' install bin_PROGRAMS= sbin_PROGRAMS= noinst_PROGRAMS=
 
     '$(TARGET)-gcc' \
-        -W -Wall -Werror -ansi -pedantic \
+        -mwindows -W -Wall -Werror -Wno-error=deprecated-declarations \
+        -std=c99 -pedantic \
         '$(2).c' -o '$(PREFIX)/$(TARGET)/bin/test-librsvg.exe' \
         `'$(TARGET)-pkg-config' librsvg-2.0 --cflags --libs`
 endef

@@ -3,20 +3,25 @@
 
 PKG             := file
 $(PKG)_IGNORE   :=
-$(PKG)_CHECKSUM := df8ffe8759ec8cd85a98dc98e858563ea2555f64
+$(PKG)_VERSION  := 5.24
+$(PKG)_CHECKSUM := 152daac79ccb4560dc65d5aaf754196ec1536f1d
 $(PKG)_SUBDIR   := file-$($(PKG)_VERSION)
 $(PKG)_FILE     := file-$($(PKG)_VERSION).tar.gz
-$(PKG)_URL      := ftp://ftp.astron.com/pub/file/$($(PKG)_FILE)
+$(PKG)_URL      := https://distfiles.macports.org/file/$($(PKG)_FILE)
+# astron.com is down
+# $(PKG)_URL_2    := ftp://ftp.astron.com/pub/file/$($(PKG)_FILE)
 $(PKG)_DEPS     := gcc libgnurx
 
 define $(PKG)_UPDATE
-    wget -q -O- 'ftp://ftp.astron.com/pub/file/' | \
+    $(WGET) -q -O- 'https://distfiles.macports.org/file/' | \
     grep 'file-' | \
     $(SED) -n 's,.*file-\([0-9][^>]*\)\.tar.*,\1,p' | \
     tail -1
 endef
 
 define $(PKG)_BUILD
+    cd '$(1)' && autoreconf -fi
+
     # "file" needs a runnable version of the "file" utility
     # itself. This must match the source code regarding its
     # version. Therefore we build a native one ourselves first.
@@ -27,10 +32,8 @@ define $(PKG)_BUILD
     $(MAKE) -C '$(1).native/src' -j '$(JOBS)' file
 
     cd '$(1)' && ./configure \
-        --host='$(TARGET)' \
-        --build="`config.guess`" \
-        --disable-shared \
-        --prefix='$(PREFIX)/$(TARGET)'
+        $(MXE_CONFIGURE_OPTS) \
+        CFLAGS=-DHAVE_PREAD
     $(MAKE) -C '$(1)' -j '$(JOBS)' bin_PROGRAMS= sbin_PROGRAMS= noinst_PROGRAMS= man_MANS= FILE_COMPILE='$(1).native/src/file'
     $(MAKE) -C '$(1)' -j 1 install bin_PROGRAMS= sbin_PROGRAMS= noinst_PROGRAMS= man_MANS=
 

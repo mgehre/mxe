@@ -3,7 +3,8 @@
 
 PKG             := openssl
 $(PKG)_IGNORE   :=
-$(PKG)_CHECKSUM := a6476d33fd38c2e7dfb438d1e3be178cc242c907
+$(PKG)_VERSION  := 1.0.2d
+$(PKG)_CHECKSUM := d01d17b44663e8ffa6a33a5a30053779d9593c3d
 $(PKG)_SUBDIR   := openssl-$($(PKG)_VERSION)
 $(PKG)_FILE     := openssl-$($(PKG)_VERSION).tar.gz
 $(PKG)_URL      := http://www.openssl.org/source/$($(PKG)_FILE)
@@ -11,21 +12,25 @@ $(PKG)_URL_2    := ftp://ftp.openssl.org/source/$($(PKG)_FILE)
 $(PKG)_DEPS     := gcc zlib libgcrypt
 
 define $(PKG)_UPDATE
-    wget -q -O- 'http://www.openssl.org/source/' | \
+    $(WGET) -q -O- 'http://www.openssl.org/source/' | \
     $(SED) -n 's,.*openssl-\([0-9][0-9a-z.]*\)\.tar.*,\1,p' | \
-    grep -v '^0\.9\.' | \
-    head -1
+    $(SORT) -V | \
+    tail -1
 endef
 
 define $(PKG)_BUILD
     cd '$(1)' && CC='$(TARGET)-gcc' ./Configure \
-        mingw \
+        @openssl-target@ \
         zlib \
-        no-shared \
+        $(if $(BUILD_STATIC),no-,)shared \
         no-capieng \
         --prefix='$(PREFIX)/$(TARGET)'
-    $(MAKE) -C '$(1)' install -j 1 \
+    $(MAKE) -C '$(1)' all install_sw -j 1 \
         CC='$(TARGET)-gcc' \
         RANLIB='$(TARGET)-ranlib' \
-        AR='$(TARGET)-ar rcu'
+        AR='$(TARGET)-ar rcu' \
+        CROSS_COMPILE='$(TARGET)-'
 endef
+
+$(PKG)_BUILD_i686-w64-mingw32   = $(subst @openssl-target@,mingw,$($(PKG)_BUILD))
+$(PKG)_BUILD_x86_64-w64-mingw32 = $(subst @openssl-target@,mingw64,$($(PKG)_BUILD))

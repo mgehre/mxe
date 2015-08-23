@@ -3,26 +3,25 @@
 
 PKG             := libass
 $(PKG)_IGNORE   :=
-$(PKG)_CHECKSUM := 7a0ea048f687421f3e1314988ca02f04861fc5f0
+$(PKG)_VERSION  := 0.12.3
+$(PKG)_CHECKSUM := 47d5850a358df899f468837d0928ee529c54ee45
 $(PKG)_SUBDIR   := $(PKG)-$($(PKG)_VERSION)
 $(PKG)_FILE     := $($(PKG)_SUBDIR).tar.xz
-$(PKG)_URL      := http://libass.googlecode.com/files/$($(PKG)_FILE)
-$(PKG)_DEPS     := gcc freetype fontconfig fribidi
+$(PKG)_URL      := https://github.com/libass/libass/releases/download/$($(PKG)_VERSION)/$($(PKG)_FILE)
+$(PKG)_DEPS     := gcc freetype fontconfig fribidi harfbuzz
 
 define $(PKG)_UPDATE
-    wget -q -O- 'http://code.google.com/p/libass/downloads/list?sort=-uploaded' | \
+    $(WGET) -q -O- 'http://code.google.com/p/libass/downloads/list?sort=-uploaded' | \
     $(SED) -n 's,.*libass-\([0-9][^<]*\)\.tar.*,\1,p' | \
     head -1
 endef
 
 define $(PKG)_BUILD
     cd '$(1)' && ./configure \
-        --host='$(TARGET)' \
-        --prefix='$(PREFIX)/$(TARGET)' \
-        --disable-shared \
-        --disable-png \
+        $(MXE_CONFIGURE_OPTS) \
         --disable-enca \
-        --enable-fontconfig
+        --enable-fontconfig \
+        --enable-harfbuzz
     $(MAKE) -C '$(1)' -j '$(JOBS)'
     $(MAKE) -C '$(1)' -j 1 install
 

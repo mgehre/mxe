@@ -3,27 +3,35 @@
 
 PKG             := libvpx
 $(PKG)_IGNORE   :=
-$(PKG)_CHECKSUM := 2919e11074fef72fc61ef1a75160050ffaad6074
-$(PKG)_SUBDIR   := $(PKG)-v$($(PKG)_VERSION)
-$(PKG)_FILE     := $(PKG)-v$($(PKG)_VERSION).tar.bz2
-$(PKG)_URL      := http://webm.googlecode.com/files/$($(PKG)_FILE)
-$(PKG)_DEPS     := gcc
+$(PKG)_VERSION  := 1.4.0
+$(PKG)_CHECKSUM := d05f4e9a9878886282ac9c9246f8fac080c94c8f
+$(PKG)_SUBDIR   := $(PKG)-$($(PKG)_VERSION)
+$(PKG)_FILE     := $(PKG)-$($(PKG)_VERSION).tar.bz2
+$(PKG)_URL      := http://storage.googleapis.com/downloads.webmproject.org/releases/webm/$($(PKG)_FILE)
+$(PKG)_DEPS     := gcc pthreads yasm
 
 define $(PKG)_UPDATE
-    wget -q -O- 'http://code.google.com/p/webm/downloads/list?sort=-uploaded' | \
-    $(SED) -n 's,.*libvpx-v\([0-9][^<]*\)\.tar.*,\1,p' | \
+    $(WGET) -q -O- 'http://downloads.webmproject.org/releases/webm/index.html' | \
+    $(SED) -n 's,.*libvpx-\([0-9][^>]*\)\.tar.*,\1,p' | \
+    $(SORT) -Vr | \
     head -1
 endef
 
 define $(PKG)_BUILD
+    $(SED) -i 's,yasm[ $$],$(TARGET)-yasm ,g' '$(1)/build/make/configure.sh'
     cd '$(1)' && \
         CROSS='$(TARGET)-' \
         ./configure \
         --prefix='$(PREFIX)/$(TARGET)' \
-        --target=x86-win32-gcc \
+        --target=@libvpx-target@ \
         --disable-examples \
-        --disable-install-docs
+        --disable-install-docs \
+        --as=$(TARGET)-yasm \
+        --extra-cflags='-std=gnu89'
     $(MAKE) -C '$(1)' -j '$(JOBS)'
     $(MAKE) -C '$(1)' -j 1 install
     $(TARGET)-ranlib $(PREFIX)/$(TARGET)/lib/libvpx.a
 endef
+
+$(PKG)_BUILD_i686-w64-mingw32   = $(subst @libvpx-target@,x86-win32-gcc,$($(PKG)_BUILD))
+$(PKG)_BUILD_x86_64-w64-mingw32 = $(subst @libvpx-target@,x86_64-win64-gcc,$($(PKG)_BUILD))

@@ -3,32 +3,46 @@
 
 PKG             := freeimage
 $(PKG)_IGNORE   :=
-$(PKG)_CHECKSUM := 083ef40a1734e33cc34c55ba87019bf5cce9ca4a
+$(PKG)_VERSION  := 3.15.4
+$(PKG)_CHECKSUM := 1d30057a127b2016cf9b4f0f8f2ba92547670f96
 $(PKG)_SUBDIR   := FreeImage
 $(PKG)_FILE     := FreeImage$(subst .,,$($(PKG)_VERSION)).zip
 $(PKG)_URL      := http://$(SOURCEFORGE_MIRROR)/project/freeimage/Source Distribution/$($(PKG)_VERSION)/$($(PKG)_FILE)
 $(PKG)_DEPS     := gcc
 
 define $(PKG)_UPDATE
-    wget -q -O- 'http://sourceforge.net/projects/freeimage/files/Source Distribution/' | \
+    $(WGET) -q -O- 'http://sourceforge.net/projects/freeimage/files/Source Distribution/' | \
     $(SED) -n 's,.*/\([0-9][^"]*\)/".*,\1,p' | \
     head -1
 endef
 
 define $(PKG)_BUILD
-    $(SED) -i 's,install ,$(INSTALL) ,' '$(1)'/Makefile.gnu
-
-    $(MAKE) -C '$(1)' -j '$(JOBS)' -f Makefile.gnu \
+    $(MAKE) -C '$(1)' -j '$(JOBS)' -f Makefile.mingw \
         CXX='$(TARGET)-g++' \
         CC='$(TARGET)-gcc' \
         AR='$(TARGET)-ar' \
-        INCDIR='$(PREFIX)/$(TARGET)/include' \
-        INSTALLDIR='$(PREFIX)/$(TARGET)/lib'
+        RC='$(TARGET)-windres' \
+        FREEIMAGE_LIBRARY_TYPE=STATIC \
+        TARGET=freeimage
 
-    $(MAKE) -C '$(1)' -j '$(JOBS)' -f Makefile.gnu install \
-        CXX='$(TARGET)-g++' \
-        CC='$(TARGET)-gcc' \
-        AR='$(TARGET)-ar' \
-        INCDIR='$(PREFIX)/$(TARGET)/include' \
-        INSTALLDIR='$(PREFIX)/$(TARGET)/lib'
+    $(INSTALL) -d '$(PREFIX)/$(TARGET)/lib'
+    $(INSTALL) -m644 '$(1)/libfreeimage.a' '$(PREFIX)/$(TARGET)/lib/'
+    $(INSTALL) -d '$(PREFIX)/$(TARGET)/include'
+    $(INSTALL) -m644 '$(1)/Source/FreeImage.h' '$(PREFIX)/$(TARGET)/include/'
+
+    # create pkg-config file
+    $(INSTALL) -d '$(PREFIX)/$(TARGET)/lib/pkgconfig'
+    (echo 'Name: freeimage'; \
+     echo 'Version: $(freeimage_VERSION)'; \
+     echo 'Description: FreeImage'; \
+     echo 'Cflags: -DFREEIMAGE_LIB'; \
+     echo 'Libs: -lfreeimage -lws2_32 -lstdc++';) \
+     > '$(PREFIX)/$(TARGET)/lib/pkgconfig/freeimage.pc'
+
+    '$(TARGET)-gcc' \
+        -W -Wall -Werror -ansi -pedantic \
+        '$(2).c' -o '$(PREFIX)/$(TARGET)/bin/test-freeimage.exe' \
+        `'$(TARGET)-pkg-config' freeimage --cflags --libs`
 endef
+
+$(PKG)_BUILD_SHARED =

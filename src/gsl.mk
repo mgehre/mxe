@@ -3,17 +3,18 @@
 
 PKG             := gsl
 $(PKG)_IGNORE   :=
-$(PKG)_CHECKSUM := e1a600e4fe359692e6f0e28b7e12a96681efbe52
+$(PKG)_VERSION  := 1.16
+$(PKG)_CHECKSUM := 210af9366485f149140973700d90dc93a4b6213e
 $(PKG)_SUBDIR   := $(PKG)-$($(PKG)_VERSION)
 $(PKG)_FILE     := $(PKG)-$($(PKG)_VERSION).tar.gz
 $(PKG)_URL      := http://ftp.gnu.org/gnu/$(PKG)/$($(PKG)_FILE)
 $(PKG)_DEPS     := gcc
 
 define $(PKG)_UPDATE
-    wget -q -O- 'http://git.savannah.gnu.org/gitweb/?p=$(PKG).git;a=tags' | \
-    grep '<a class="list subject"' | \
-    $(SED) -n 's,.*<a[^>]*>[^0-9>]*\([0-9][^<]*\)<.*,\1,p' | \
-    head -1
+    $(WGET) -q -O- 'http://ftp.gnu.org/gnu/$(PKG)/' | \
+    $(SED) -n 's,.*<a href="gsl-\([0-9.]\+\).tar.gz".*,\1,p' | \
+    $(SORT) -V | \
+    tail -1
 endef
 
 define $(PKG)_BUILD
@@ -31,3 +32,5 @@ define $(PKG)_BUILD
         '$(2).c' -o '$(PREFIX)/$(TARGET)/bin/test-gsl.exe' \
         -lgsl
 endef
+
+$(PKG)_BUILD_SHARED =

@@ -3,14 +3,15 @@
 
 PKG             := winpcap
 $(PKG)_IGNORE   :=
-$(PKG)_CHECKSUM := 9155687ab23dbb2348e7cf93caf8a84f51e94795
+$(PKG)_VERSION  := 4_1_3
+$(PKG)_CHECKSUM := 81b1dd70a7c75080033eab2d30811e737df9fa5b
 $(PKG)_SUBDIR   := winpcap
 $(PKG)_FILE     := WpcapSrc_$($(PKG)_VERSION).zip
 $(PKG)_URL      := http://www.winpcap.org/install/bin/$($(PKG)_FILE)
 $(PKG)_DEPS     := gcc
 
 define $(PKG)_UPDATE
-    wget -q -O- 'http://www.winpcap.org/devel.htm' | \
+    $(WGET) -q -O- 'http://www.winpcap.org/devel.htm' | \
     $(SED) -n 's,.*WpcapSrc_\([0-9][^>]*\)\.zip.*,\1,p' | \
     head -1
 endef
@@ -32,8 +33,8 @@ define $(PKG)_BUILD
     AR='$(TARGET)-ar' \
     RANLIB='$(TARGET)-ranlib' \
     $(MAKE) -C '$(1)/wpcap/PRJ' -j 1 libwpcap.a
-    $(INSTALL) -d '$(PREFIX)/$(TARGET)/include'
     $(INSTALL) -m644 '$(1)/wpcap/libpcap/'*.h '$(1)/wpcap/Win32-Extensions/'*.h '$(PREFIX)/$(TARGET)/include/'
-    $(INSTALL) -d '$(PREFIX)/$(TARGET)/lib'
     $(INSTALL) -m644 '$(1)/wpcap/PRJ/libwpcap.a' '$(PREFIX)/$(TARGET)/lib/'
 endef
+
+$(PKG)_BUILD_SHARED =

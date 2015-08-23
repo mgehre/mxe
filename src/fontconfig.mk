@@ -3,31 +3,26 @@
 
 PKG             := fontconfig
 $(PKG)_IGNORE   :=
-$(PKG)_CHECKSUM := 1ab2f437c2261028ae7969892277af2d8d8db489
+$(PKG)_VERSION  := 2.11.1
+$(PKG)_CHECKSUM := 08565feea5a4e6375f9d8a7435dac04e52620ff2
 $(PKG)_SUBDIR   := fontconfig-$($(PKG)_VERSION)
-$(PKG)_FILE     := fontconfig-$($(PKG)_VERSION).tar.gz
+$(PKG)_FILE     := fontconfig-$($(PKG)_VERSION).tar.bz2
 $(PKG)_URL      := http://fontconfig.org/release/$($(PKG)_FILE)
-$(PKG)_DEPS     := gcc freetype expat
+$(PKG)_DEPS     := gcc freetype-bootstrap expat
 
 define $(PKG)_UPDATE
-    wget -q -O- 'http://fontconfig.org/release/' | \
+    $(WGET) -q -O- 'http://fontconfig.org/release/' | \
     $(SED) -n 's,.*fontconfig-\([0-9][^>]*\)\.tar.*,\1,p' | \
     tail -1
 endef
 
 define $(PKG)_BUILD
-    # ensure there is no (buggy) attempt to install the *.dll.a file
-    # (remove this line of you want to link dynamically)
-    $(SED) -i 's,^install-data-local:.*,install-data-local:,' '$(1)/src/Makefile.in'
-    $(SED) -i 's,^\(Libs:.*\),\1 @EXPAT_LIBS@ @FREETYPE_LIBS@,' '$(1)/fontconfig.pc.in'
+    cd '$(1)' && autoreconf -fi
     cd '$(1)' && ./configure \
-        --host='$(TARGET)' \
-        --build="`config.guess`" \
-        --disable-shared \
-        --prefix='$(PREFIX)/$(TARGET)' \
+        $(MXE_CONFIGURE_OPTS) \
         --with-arch='$(TARGET)' \
-        --with-freetype-config='$(PREFIX)/$(TARGET)/bin/freetype-config' \
-        --with-expat='$(PREFIX)/$(TARGET)'
+        --with-expat='$(PREFIX)/$(TARGET)' \
+        --disable-docs
     $(MAKE) -C '$(1)' -j '$(JOBS)' bin_PROGRAMS= sbin_PROGRAMS= noinst_PROGRAMS=
     $(MAKE) -C '$(1)' -j 1 install bin_PROGRAMS= sbin_PROGRAMS= noinst_PROGRAMS=
 endef

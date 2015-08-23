@@ -3,14 +3,15 @@
 
 PKG             := libgsasl
 $(PKG)_IGNORE   :=
-$(PKG)_CHECKSUM := 2942886514f14801193e505fc5367330d5c6b7de
+$(PKG)_VERSION  := 1.8.0
+$(PKG)_CHECKSUM := 08fd5dfdd3d88154cf06cb0759a732790c47b4f7
 $(PKG)_SUBDIR   := libgsasl-$($(PKG)_VERSION)
 $(PKG)_FILE     := libgsasl-$($(PKG)_VERSION).tar.gz
 $(PKG)_URL      := http://ftp.gnu.org/gnu/gsasl/$($(PKG)_FILE)
-$(PKG)_DEPS     := gcc libiconv libidn libntlm libgcrypt nettle
+$(PKG)_DEPS     := gcc libiconv libidn libntlm libgcrypt
 
 define $(PKG)_UPDATE
-    wget -q -O- 'http://git.savannah.gnu.org/gitweb/?p=gsasl.git;a=tags' | \
+    $(WGET) -q -O- 'http://git.savannah.gnu.org/gitweb/?p=gsasl.git;a=tags' | \
     grep '<a class="list subject"' | \
     $(SED) -n 's,.*<a[^>]*>\([0-9]*\.[0-9]*[02468]\.[^<]*\)<.*,\1,p' | \
     head -1
@@ -18,10 +19,7 @@ endef
 
 define $(PKG)_BUILD
     cd '$(1)' && touch src/libgsasl-7.def && ./configure \
-        --host='$(TARGET)' \
-        --build="`config.guess`" \
-        --disable-shared \
-        --prefix='$(PREFIX)/$(TARGET)' \
+        $(MXE_CONFIGURE_OPTS) \
         --disable-nls \
         --with-libgcrypt \
         --with-libiconv-prefix='$(PREFIX)/$(TARGET)' \

@@ -3,14 +3,15 @@
 
 PKG             := xmlwrapp
 $(PKG)_IGNORE   :=
-$(PKG)_CHECKSUM := 7bd66ecc1204b296580a499fd929d77b79e6e85a
+$(PKG)_VERSION  := 0.7.0
+$(PKG)_CHECKSUM := 2a9c1db86977515863b41099b94af1152c2d0374
 $(PKG)_SUBDIR   := $(PKG)-$($(PKG)_VERSION)
 $(PKG)_FILE     := $(PKG)-$($(PKG)_VERSION).tar.gz
 $(PKG)_URL      := http://$(SOURCEFORGE_MIRROR)/project/$(PKG)/$(PKG)/$($(PKG)_VERSION)/$($(PKG)_FILE)
 $(PKG)_DEPS     := gcc boost libxml2 libxslt
 
 define $(PKG)_UPDATE
-    wget -q -O- 'http://sourceforge.net/projects/xmlwrapp/files/xmlwrapp/' | \
+    $(WGET) -q -O- 'http://sourceforge.net/projects/xmlwrapp/files/xmlwrapp/' | \
     $(SED) -n 's,.*/\([0-9][^"]*\)/".*,\1,p' | \
     head -1
 endef
@@ -23,3 +24,5 @@ define $(PKG)_BUILD
         PKG_CONFIG='$(TARGET)-pkg-config'
     $(MAKE) -C '$(1)' -j '$(JOBS)' install bin_PROGRAMS= sbin_PROGRAMS= noinst_PROGRAMS= html_DATA=
 endef
+
+$(PKG)_BUILD_SHARED =

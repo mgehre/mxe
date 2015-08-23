@@ -3,14 +3,16 @@
 
 PKG             := zlib
 $(PKG)_IGNORE   :=
-$(PKG)_CHECKSUM := 3d445731e4bfea1cd00f36567d77d6e5f5a19be9
+$(PKG)_VERSION  := 1.2.8
+$(PKG)_CHECKSUM := b598beb7acc96347cbd1020b71aef7871d374677
 $(PKG)_SUBDIR   := zlib-$($(PKG)_VERSION)
-$(PKG)_FILE     := zlib-$($(PKG)_VERSION).tar.bz2
+$(PKG)_FILE     := zlib-$($(PKG)_VERSION).tar.xz
 $(PKG)_URL      := http://zlib.net/$($(PKG)_FILE)
+$(PKG)_URL_2    := http://$(SOURCEFORGE_MIRROR)/project/libpng/$(PKG)/$($(PKG)_VERSION)/$($(PKG)_FILE)
 $(PKG)_DEPS     := gcc
 
 define $(PKG)_UPDATE
-    wget -q -O- 'http://zlib.net/' | \
+    $(WGET) -q -O- 'http://zlib.net/' | \
     $(SED) -n 's,.*zlib-\([0-9][^>]*\)\.tar.*,\1,ip' | \
     head -1
 endef
@@ -20,4 +22,15 @@ define $(PKG)_BUILD
         --prefix='$(PREFIX)/$(TARGET)' \
         --static
     $(MAKE) -C '$(1)' -j '$(JOBS)' install
+endef
+
+define $(PKG)_BUILD_SHARED
+    $(MAKE) -C '$(1)' -f win32/Makefile.gcc \
+        SHARED_MODE=1 \
+        STATICLIB= \
+        BINARY_PATH='$(PREFIX)/$(TARGET)/bin' \
+        INCLUDE_PATH='$(PREFIX)/$(TARGET)/include' \
+        LIBRARY_PATH='$(PREFIX)/$(TARGET)/lib' \
+        PREFIX='$(TARGET)-' \
+        -j '$(JOBS)' install
 endef

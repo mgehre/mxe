@@ -1,36 +1,27 @@
 # This file is part of MXE.
 # See index.html for further information.
 
+# Runtimes can/will have different implementations,
+# but the pre-requisite package and test are the same.
+
 PKG             := pthreads
-$(PKG)_IGNORE   :=
-$(PKG)_CHECKSUM := da8371cb20e8e238f96a1d0651212f154d84a9ac
-$(PKG)_SUBDIR   := pthreads-w32-$($(PKG)_VERSION)-release
-$(PKG)_FILE     := pthreads-w32-$($(PKG)_VERSION)-release.tar.gz
-$(PKG)_URL      := ftp://sourceware.org/pub/pthreads-win32/$($(PKG)_FILE)
-$(PKG)_DEPS     := gcc
+$(PKG)_VERSION  := POSIX 1003.1-2001
+$(PKG)_CHECKSUM  = $(winpthreads_CHECKSUM)
+$(PKG)_FILE      = $(winpthreads_FILE)
+$(PKG)_DEPS     := winpthreads
 
 define $(PKG)_UPDATE
-    wget -q -O- 'ftp://sourceware.org/pub/pthreads-win32/Release_notes' | \
-    $(SED) -n 's,^RELEASE \([0-9][^[:space:]]*\).*,\1,p' | \
-    tr '.' '-' | \
-    head -1
+    echo $(pthreads_VERSION)
 endef
 
-define $(PKG)_BUILD
-    $(SED) -i '35i\#define PTW32_STATIC_LIB' '$(1)/pthread.h'
-    $(SED) -i '41i\#define PTW32_STATIC_LIB' '$(1)/sched.h'
-    $(SED) -i '41i\#define PTW32_STATIC_LIB' '$(1)/semaphore.h'
-    $(SED) -i 's,#include "config.h",,'      '$(1)/pthread.h'
-    $(MAKE) -C '$(1)' -j 1 GC-static CROSS='$(TARGET)-'
-    $(INSTALL) -d '$(PREFIX)/$(TARGET)/lib'
-    $(INSTALL) -m644 '$(1)/libpthreadGC2.a' '$(PREFIX)/$(TARGET)/lib/libpthread.a'
-    $(INSTALL) -d '$(PREFIX)/$(TARGET)/include'
-    $(INSTALL) -m644 '$(1)/pthread.h'   '$(PREFIX)/$(TARGET)/include/'
-    $(INSTALL) -m644 '$(1)/sched.h'     '$(PREFIX)/$(TARGET)/include/'
-    $(INSTALL) -m644 '$(1)/semaphore.h' '$(PREFIX)/$(TARGET)/include/'
-
+PTHREADS_TEST = \
+    $(INSTALL) -d '$(PREFIX)/$(TARGET)/lib/pkgconfig' && \
+    (echo 'Name: pthreads'; \
+     echo 'Version: $($(PKG)_VERSION)'; \
+     echo 'Description: Posix Threads ($(PKG))'; \
+     echo 'Libs: -lpthread -lws2_32';) \
+     > '$(PREFIX)/$(TARGET)/lib/pkgconfig/pthreads.pc' && \
     '$(TARGET)-gcc' \
         -W -Wall -Werror -ansi -pedantic \
-        '$(2).c' -o '$(PREFIX)/$(TARGET)/bin/test-pthreads.exe' \
-        -lpthread -lws2_32
-endef
+        '$(TOP_DIR)/src/pthreads-test.c' -o '$(PREFIX)/$(TARGET)/bin/test-pthreads.exe' \
+        `'$(TARGET)-pkg-config' --libs pthreads`

@@ -3,31 +3,22 @@
 
 PKG             := libmng
 $(PKG)_IGNORE   :=
-$(PKG)_CHECKSUM := c21c84b614500ae1a41c6595d5f81c596e406ca2
+$(PKG)_VERSION  := 2.0.3
+$(PKG)_CHECKSUM := 0f141482ffcef6f8cd4413f945a59310ac2e49af
 $(PKG)_SUBDIR   := $(PKG)-$($(PKG)_VERSION)
-$(PKG)_FILE     := $(PKG)-$($(PKG)_VERSION).tar.bz2
+$(PKG)_FILE     := $(PKG)-$($(PKG)_VERSION).tar.xz
 $(PKG)_URL      := http://$(SOURCEFORGE_MIRROR)/project/$(PKG)/$(PKG)-devel/$($(PKG)_VERSION)/$($(PKG)_FILE)
-$(PKG)_DEPS     := gcc zlib jpeg lcms1
+$(PKG)_DEPS     := gcc zlib jpeg lcms
 
 define $(PKG)_UPDATE
-    wget -q -O- 'http://sourceforge.net/projects/libmng/files/libmng-devel/' | \
+    $(WGET) -q -O- 'http://sourceforge.net/projects/libmng/files/libmng-devel/' | \
     $(SED) -n 's,.*/\([0-9][^"]*\)/".*,\1,p' | \
     head -1
 endef
 
 define $(PKG)_BUILD
-    $(MAKE) -C '$(1)' -j '$(JOBS)' \
-        -f '$(1)'/makefiles/makefile.unix \
-        CC=$(TARGET)-gcc CFLAGS='-DMNG_BUILD_SO -DMNG_FULL_CMS'
-    $(TARGET)-ranlib '$(1)/libmng.a'
-    $(INSTALL) -d '$(PREFIX)/$(TARGET)/lib'
-    $(INSTALL) -m644 '$(1)/libmng.a' '$(PREFIX)/$(TARGET)/lib/'
-    $(INSTALL) -d '$(PREFIX)/$(TARGET)/include'
-    $(INSTALL) -m644 '$(1)/libmng.h' '$(1)/libmng_conf.h' '$(1)/libmng_types.h' '$(PREFIX)/$(TARGET)/include/'
-    $(SED) -e 's^@prefix@^$(PREFIX)/$(TARGET)^;' \
-           -e 's^@VERSION@^$(libmng_VERSION)^;' \
-           -e 's^@mng_libs_private@^-ljpeg^;' \
-           -e 's^@mng_requires_private@^lcms zlib^;' \
-           < '$(1)/libmng.pc.in' > '$(1)/libmng.pc'
-    $(INSTALL) -m644 '$(1)/libmng.pc' '$(PREFIX)/$(TARGET)/lib/pkgconfig/'
+    echo 'Requires: zlib lcms2 jpeg' >> '$(1)/libmng.pc.in'
+    cd '$(1)' && ./configure \
+        $(MXE_CONFIGURE_OPTS)
+    $(MAKE) -C '$(1)' -j '$(JOBS)' install
 endef

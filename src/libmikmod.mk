@@ -3,32 +3,27 @@
 
 PKG             := libmikmod
 $(PKG)_IGNORE   :=
-$(PKG)_CHECKSUM := f16fc09ee643af295a8642f578bda97a81aaf744
+$(PKG)_VERSION  := 3.3.7
+$(PKG)_CHECKSUM := f936d92ed9752d9f47a3340bdafc78159a270ca9
 $(PKG)_SUBDIR   := libmikmod-$($(PKG)_VERSION)
-$(PKG)_FILE     := libmikmod-$($(PKG)_VERSION).tar.bz2
-$(PKG)_URL      := http://mikmod.raphnet.net/files/$($(PKG)_FILE)
-$(PKG)_DEPS     := gcc pthreads
+$(PKG)_FILE     := libmikmod-$($(PKG)_VERSION).tar.gz
+$(PKG)_URL      := http://$(SOURCEFORGE_MIRROR)/project/mikmod/libmikmod/$($(PKG)_VERSION)/$($(PKG)_FILE)
+$(PKG)_DEPS     := gcc
 
 define $(PKG)_UPDATE
-    wget -q -O- 'http://mikmod.raphnet.net/' | \
-    $(SED) -n 's,.*libmikmod-\([0-9][^>]*\)\.tar.*,\1,p' | \
+    $(WGET) -q -O- 'http://sourceforge.net/projects/mikmod/files/libmikmod/' | \
+    $(SED) -n 's,.*<a href="/projects/mikmod/files/libmikmod/\([0-9][^>]*\)/".*,\1,p' | \
+    $(SORT) -Vr | \
     head -1
 endef
 
 define $(PKG)_BUILD
-    $(SED) -i 's,-Dunix,,' '$(1)/libmikmod/Makefile.in'
-    $(SED) -i 's,`uname`,MinGW,g' '$(1)/configure'
-    cd '$(1)' && \
-        CC='$(TARGET)-gcc' \
-        NM='$(TARGET)-nm' \
-        RANLIB='$(TARGET)-ranlib' \
-        STRIP='$(TARGET)-strip' \
-        ./configure \
-            --disable-shared \
-            --prefix='$(PREFIX)/$(TARGET)' \
-            --libdir='$(PREFIX)/$(TARGET)/lib' \
-            --disable-esd
-    $(MAKE) -C '$(1)' -j '$(JOBS)' install bin_PROGRAMS= sbin_PROGRAMS= noinst_PROGRAMS=
+    $(if $(BUILD_STATIC), \
+        $(SED) -i 's!defined(MIKMOD_STATIC)!1!g' '$(1)/include/mikmod.h')
+    cd '$(1)' && ./configure \
+        $(MXE_CONFIGURE_OPTS) \
+        --disable-doc
+    $(MAKE) -C '$(1)' -j '$(JOBS)' install $(MXE_DISABLE_CRUFT)
 
     '$(TARGET)-gcc' \
         -W -Wall -Werror -std=c99 -pedantic \

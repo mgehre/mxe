@@ -3,24 +3,22 @@
 
 PKG             := lcms
 $(PKG)_IGNORE   :=
-$(PKG)_CHECKSUM := 67d5fabda2f5777ca8387766539b9c871d993133
+$(PKG)_VERSION  := 2.7
+$(PKG)_CHECKSUM := 625f0d74bad4a0f6f917120fd992437d26f754d2
 $(PKG)_SUBDIR   := $(PKG)$(word 1,$(subst ., ,$($(PKG)_VERSION)))-$(subst a,,$($(PKG)_VERSION))
 $(PKG)_FILE     := $(PKG)$(word 1,$(subst ., ,$($(PKG)_VERSION)))-$(subst a,,$($(PKG)_VERSION)).tar.gz
 $(PKG)_URL      := http://$(SOURCEFORGE_MIRROR)/project/$(PKG)/$(PKG)/$(subst a,,$($(PKG)_VERSION))/$($(PKG)_FILE)
 $(PKG)_DEPS     := gcc jpeg tiff zlib
 
 define $(PKG)_UPDATE
-    wget -q -O- 'http://sourceforge.net/projects/lcms/files/lcms/' | \
+    $(WGET) -q -O- 'http://sourceforge.net/projects/lcms/files/lcms/' | \
     $(SED) -n 's,.*/\([0-9][^"]*\)/".*,\1,p' | \
     head -1
 endef
 
 define $(PKG)_BUILD
     cd '$(1)' && ./configure \
-        --prefix='$(PREFIX)/$(TARGET)' \
-        --host='$(TARGET)' \
-        --build="`config.guess`" \
-        --disable-shared \
+        $(MXE_CONFIGURE_OPTS) \
         --with-jpeg \
         --with-tiff \
         --with-zlib

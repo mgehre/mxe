@@ -3,24 +3,24 @@
 
 PKG             := libffi
 $(PKG)_IGNORE   :=
-$(PKG)_CHECKSUM := 97abf70e6a6d315d9259d58ac463663051d471e1
+$(PKG)_VERSION  := 3.2.1
+$(PKG)_CHECKSUM := 280c265b789e041c02e5c97815793dfc283fb1e6
 $(PKG)_SUBDIR   := $(PKG)-$($(PKG)_VERSION)
 $(PKG)_FILE     := $(PKG)-$($(PKG)_VERSION).tar.gz
-$(PKG)_URL      := ftp://sourceware.org/pub/$(PKG)/$($(PKG)_FILE)
+$(PKG)_URL      := http://www.mirrorservice.org/sites/sourceware.org/pub/$(PKG)/$($(PKG)_FILE)
+$(PKG)_URL_2    := ftp://sourceware.org/pub/$(PKG)/$($(PKG)_FILE)
 $(PKG)_DEPS     := gcc
 
 define $(PKG)_UPDATE
-    wget -q --no-check-certificate -O- 'https://github.com/atgreen/libffi/tags' | \
-    grep '<a href="/atgreen/libffi/tarball/' | \
-    $(SED) -n 's,.*href="/atgreen/libffi/tarball/v\([0-9][^"]*\)".*,\1,p' | \
+    $(WGET) -q -O- 'https://github.com/atgreen/libffi/tags' | \
+    grep '<a href="/atgreen/libffi/archive/' | \
+    $(SED) -n 's,.*href="/atgreen/libffi/archive/v\([0-9][^"]*\)\.tar.*,\1,p' | \
     head -1
 endef
 
 define $(PKG)_BUILD
     cd '$(1)' && ./configure \
-        --host='$(TARGET)' \
-        --prefix='$(PREFIX)/$(TARGET)' \
-        --disable-shared
+        $(MXE_CONFIGURE_OPTS)
     $(MAKE) -C '$(1)/$(TARGET)' -j '$(JOBS)'
     $(MAKE) -C '$(1)/$(TARGET)' -j 1 install
 

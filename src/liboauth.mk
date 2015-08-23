@@ -3,25 +3,24 @@
 
 PKG             := liboauth
 $(PKG)_IGNORE   :=
-$(PKG)_CHECKSUM := 9182ca5d7e127589d132377b807d0c8a8878b122
+$(PKG)_VERSION  := 1.0.3
+$(PKG)_CHECKSUM := 791dbb4166b5d2c843c8ff48ac17284cc0884af2
 $(PKG)_SUBDIR   := $(PKG)-$($(PKG)_VERSION)
 $(PKG)_FILE     := $(PKG)-$($(PKG)_VERSION).tar.gz
-$(PKG)_URL      := http://liboauth.sourceforge.net/pool/$($(PKG)_FILE)
+$(PKG)_URL      := http://$(SOURCEFORGE_MIRROR)/project/$(PKG)/$($(PKG)_FILE)
 $(PKG)_DEPS     := gcc curl openssl
 
 define $(PKG)_UPDATE
-    wget -q -O- 'http://liboauth.sourceforge.net/' | \
+    $(WGET) -q -O- 'http://sourceforge.net/projects/liboauth/files/' | \
     $(SED) -n 's,.*liboauth-\([0-9][^>]*\)\.tar.*,\1,p' | \
     head -1
 endef
 
 define $(PKG)_BUILD
     cd '$(1)' && ./configure \
-        --host='$(TARGET)' \
-        --prefix='$(PREFIX)/$(TARGET)' \
-        --disable-shared \
+        $(MXE_CONFIGURE_OPTS) \
         --disable-curl
-    $(MAKE) -C '$(1)' -j '$(JOBS)'
+    $(MAKE) -C '$(1)' -j '$(JOBS)' LDFLAGS='-no-undefined'
     $(MAKE) -C '$(1)' -j 1 install
 
     '$(TARGET)-gcc' \

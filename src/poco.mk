@@ -3,14 +3,15 @@
 
 PKG             := poco
 $(PKG)_IGNORE   :=
-$(PKG)_CHECKSUM := 9e1ef31d369c67eef2d3ce1ca8f2b6ac5cc38ec4
+$(PKG)_VERSION  := 1.4.7p1
+$(PKG)_CHECKSUM := 8f0c65a0e477f0d623ebc589069357ef7e69217c
 $(PKG)_SUBDIR   := $(PKG)-$($(PKG)_VERSION)
 $(PKG)_FILE     := $($(PKG)_SUBDIR).tar.gz
-$(PKG)_URL      := http://$(SOURCEFORGE_MIRROR)/project/$(PKG)/sources/$(PKG)-$(word 1,$(subst p, ,$($(PKG)_VERSION)))/$($(PKG)_FILE)
-$(PKG)_DEPS     := gcc
+$(PKG)_URL      := http://pocoproject.org/releases/$(PKG)-$(word 1,$(subst p, ,$($(PKG)_VERSION)))/$($(PKG)_FILE)
+$(PKG)_DEPS     := gcc expat openssl pcre sqlite zlib
 
 define $(PKG)_UPDATE
-    wget -q -O- 'http://pocoproject.org/download/' | \
+    $(WGET) -q -O- 'http://pocoproject.org/download/' | \
     $(SED) -n 's,.*poco-\([0-9][^>/]*\)\.tar.*,\1,p' | \
     head -1
 endef
@@ -19,11 +20,20 @@ define $(PKG)_BUILD
     cd '$(1)' && ./configure \
         --config=MinGW-CrossEnv \
         --static \
-        --prefix='$(PREFIX)/$(TARGET)'
-    $(MAKE) -C '$(1)' -j '$(JOBS)' install
+        --unbundled \
+        --prefix='$(PREFIX)/$(TARGET)' \
+        --no-tests \
+        --no-samples
+    $(if $(BUILD_STATIC), \
+        $(SED) -i 's:// #define POCO_STATIC:#define POCO_STATIC:' \
+            '$(1)/Foundation/include/Poco/Config.h')
+    $(MAKE) -C '$(1)' -j '$(JOBS)' -k CROSSENV=$(TARGET) || $(MAKE) -C '$(1)' -j 1 CROSSENV=$(TARGET)
+    $(MAKE) -C '$(1)' -j 1 install CROSSENV=$(TARGET)
 
     '$(TARGET)-g++' \
-        -W -Wall -Werror -ansi -pedantic \
+        -W -Wall -Werror -ansi -pedantic -DPOCO_STATIC=1 \
         '$(2).cpp' -o '$(PREFIX)/$(TARGET)/bin/test-poco.exe' \
         -lPocoFoundation
 endef
+
+$(PKG)_BUILD_SHARED =

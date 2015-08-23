@@ -3,24 +3,24 @@
 
 PKG             := xine-lib
 $(PKG)_IGNORE   :=
-$(PKG)_CHECKSUM := 68e85049723b491ccb22d5123bf8fa780529868a
+$(PKG)_VERSION  := 1.2.6
+$(PKG)_CHECKSUM := ac929eef2b7bf5c27699bbed612b953a01fccba5
 $(PKG)_SUBDIR   := $(PKG)-$($(PKG)_VERSION)
-$(PKG)_FILE     := $(PKG)-$($(PKG)_VERSION).tar.bz2
+$(PKG)_FILE     := $(PKG)-$($(PKG)_VERSION).tar.xz
 $(PKG)_URL      := http://$(SOURCEFORGE_MIRROR)/project/xine/$(PKG)/$($(PKG)_VERSION)/$($(PKG)_FILE)
-$(PKG)_DEPS     := gcc faad2 ffmpeg flac fontconfig freetype graphicsmagick libiconv libmng pthreads sdl speex theora vorbis zlib
+$(PKG)_DEPS     := gcc faad2 ffmpeg flac fontconfig freetype graphicsmagick libiconv libmng pthreads sdl speex theora vorbis wavpack zlib libmpcdec libcdio vcdimager mman-win32 libmad a52dec libmodplug
 
 define $(PKG)_UPDATE
-    wget -q -O- 'http://hg.debian.org/hg/xine-lib/xine-lib/tags' | \
-    $(SED) -n 's,>,\n,gp' | \
-    $(SED) -n 's,^\([0-9][^< ]*\)<.*,\1,p' | \
-    head -1
+    $(WGET) -q -O- 'http://www.xine-project.org/releases' | \
+    $(SED) -e 's,<a,\n<a,g' | \
+    $(SED) -n 's,.*xine-lib-\([0-9][^"]*\)\.tar.*,\1,p' | \
+    $(SORT) -V | \
+    tail -1
 endef
 
 define $(PKG)_BUILD
     # rebuild configure script as one of the patches modifies configure.ac
-    cd '$(1)' && aclocal -I m4
-    cd '$(1)' && $(LIBTOOLIZE)
-    cd '$(1)' && autoconf
+    cd '$(1)' && autoreconf -fi
 
     cd '$(1)' && ./configure \
         --host='$(TARGET)' \
@@ -39,9 +39,6 @@ define $(PKG)_BUILD
         --with-theora \
         --with-speex \
         --with-libflac \
-        --without-external-a52dec \
-        --without-external-libmad \
-        --without-external-libmpcdec \
         --with-freetype \
         --with-fontconfig \
         --without-alsa \
@@ -51,10 +48,13 @@ define $(PKG)_BUILD
         --with-internal-vcdlibs \
         --with-external-libfaad \
         --without-external-libdts \
-        --without-wavpack \
+        --with-wavpack \
         CFLAGS='-I$(1)/win32/include' \
         PTHREAD_LIBS='-lpthread -lws2_32' \
-        LIBS="`$(TARGET)-pkg-config --libs libmng`"
+        LIBS="`$(TARGET)-pkg-config --libs libmng` -logg"
+    $(SED) -i 's,[\s^]*sed , $(SED) ,g' '$(1)/src/combined/ffmpeg/Makefile'
     $(MAKE) -C '$(1)' -j '$(JOBS)'
     $(MAKE) -C '$(1)' -j 1 install
 endef
+
+$(PKG)_BUILD_SHARED =

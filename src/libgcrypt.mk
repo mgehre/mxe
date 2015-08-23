@@ -3,25 +3,46 @@
 
 PKG             := libgcrypt
 $(PKG)_IGNORE   :=
-$(PKG)_CHECKSUM := 3e776d44375dc1a710560b98ae8437d5da6e32cf
+$(PKG)_VERSION  := 1.6.3
+$(PKG)_CHECKSUM := 9456e7b64db9df8360a1407a38c8c958da80bbf1
 $(PKG)_SUBDIR   := libgcrypt-$($(PKG)_VERSION)
 $(PKG)_FILE     := libgcrypt-$($(PKG)_VERSION).tar.bz2
-$(PKG)_URL      := ftp://ftp.gnupg.org/gcrypt/libgcrypt/$($(PKG)_FILE)
+$(PKG)_URL      := http://mirrors.dotsrc.org/gcrypt/libgcrypt/$($(PKG)_FILE)
+$(PKG)_URL_2    := ftp://ftp.gnupg.org/gcrypt/libgcrypt/$($(PKG)_FILE)
 $(PKG)_DEPS     := gcc libgpg_error
 
 define $(PKG)_UPDATE
-    wget -q -O- 'ftp://ftp.gnupg.org/gcrypt/libgcrypt/' | \
+    $(WGET) -q -O- 'ftp://ftp.gnupg.org/gcrypt/libgcrypt/' | \
     $(SED) -n 's,.*libgcrypt-\([0-9][^>]*\)\.tar.*,\1,p' | \
-    grep -v '^1\.4\.' | \
+    $(SORT) -V | \
     tail -1
 endef
 
-define $(PKG)_BUILD
+define $(PKG)_CONFIGURE
     cd '$(1)' && ./configure \
-        --host='$(TARGET)' \
-        --build="`config.guess`" \
-        --disable-shared \
-        --prefix='$(PREFIX)/$(TARGET)' \
+        $(MXE_CONFIGURE_OPTS) \
         --with-gpg-error-prefix='$(PREFIX)/$(TARGET)'
+endef
+
+define $(PKG)_MAKE
     $(MAKE) -C '$(1)' -j '$(JOBS)' install bin_PROGRAMS= sbin_PROGRAMS= noinst_PROGRAMS=
+    ln -sf '$(PREFIX)/$(TARGET)/bin/libgcrypt-config' '$(PREFIX)/bin/$(TARGET)-libgcrypt-config'
+
+    '$(TARGET)-gcc' \
+        -W -Wall -Werror -ansi -pedantic \
+        '$(2).c' -o '$(PREFIX)/$(TARGET)/bin/test-libgcrypt.exe' \
+        `$(TARGET)-libgcrypt-config --cflags --libs`
+endef
+
+define $(PKG)_BUILD
+    $($(PKG)_CONFIGURE)
+    $($(PKG)_MAKE)
+endef
+
+define $(PKG)_BUILD_x86_64-w64-mingw32
+    cd '$(1)' && autoreconf -fi
+    $($(PKG)_CONFIGURE) \
+        ac_cv_sys_symbol_underscore=no \
+        --disable-padlock-support
+    $($(PKG)_MAKE)
 endef

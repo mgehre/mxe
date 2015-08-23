@@ -3,6 +3,7 @@
 
 PKG             := gtkglext
 $(PKG)_IGNORE   :=
+$(PKG)_VERSION  := 1.2.0
 $(PKG)_CHECKSUM := db9ce38ee555fd14f55083ec7f4ae30e5338d5cc
 $(PKG)_SUBDIR   := gtkglext-$($(PKG)_VERSION)
 $(PKG)_FILE     := gtkglext-$($(PKG)_VERSION).tar.gz
@@ -10,11 +11,11 @@ $(PKG)_URL      := http://$(SOURCEFORGE_MIRROR)/project/gtkglext/gtkglext/$($(PK
 $(PKG)_DEPS     := gcc gtk2
 
 define $(PKG)_UPDATE
-    wget -q -O- 'http://git.gnome.org/cgit/gtkglext/refs/tags' | \
+    $(WGET) -q -O- 'http://git.gnome.org/cgit/gtkglext/refs/tags' | \
     grep '<a href=' | \
     $(SED) -n "s,.*<a href='[^']*/tag/?id=\\([0-9][^']*\\)'.*,\\1,p" | \
-    grep -v '1\.1\.' | \
-    head -1
+    $(SORT) -V | \
+    tail -1
 endef
 
 define $(PKG)_BUILD
@@ -42,3 +43,5 @@ define $(PKG)_BUILD
         '$(2).c' -o '$(PREFIX)/$(TARGET)/bin/test-gtkglext.exe' \
         `'$(TARGET)-pkg-config' gtkglext-1.0 --cflags --libs`
 endef
+
+$(PKG)_BUILD_SHARED =

@@ -3,6 +3,7 @@
 
 PKG             := libgomp
 $(PKG)_IGNORE    = $(gcc_IGNORE)
+$(PKG)_VERSION   = $(gcc_VERSION)
 $(PKG)_CHECKSUM  = $(gcc_CHECKSUM)
 $(PKG)_SUBDIR    = $(gcc_SUBDIR)
 $(PKG)_FILE      = $(gcc_FILE)
@@ -15,17 +16,23 @@ define $(PKG)_UPDATE
 endef
 
 define $(PKG)_BUILD
-    mkdir -p '$(1)/build/$(TARGET)/libgomp'
-    cd       '$(1)/build/$(TARGET)/libgomp' && '$(1)/libgomp/configure' \
-        --host='$(TARGET)' \
-        --build="`config.guess`" \
-        --target='$(TARGET)' \
+    mkdir -p '$(1).build'
+    cd       '$(1).build' && '$(1)/libgomp/configure' \
+        $(MXE_CONFIGURE_OPTS) \
         --prefix='$(PREFIX)' \
         --enable-version-specific-runtime-libs \
         --with-gnu-ld \
-        --disable-shared \
-        LIBS='-lws2_32'
-    $(MAKE) -C '$(1)/build/$(TARGET)/libgomp' -j '$(JOBS)' install
+        LIBS='-lws2_32' \
+        ac_cv_prog_FC='$(TARGET)-gfortran'
+    $(MAKE) -C '$(1).build' -j '$(JOBS)' install
+
+    # TODO: find a way to fix this in configure stage
+    $(if $(BUILD_SHARED), \
+        mv '$(PREFIX)/bin/'libgomp*.dll '$(PREFIX)/$(TARGET)/bin/'; \
+        cp '$(PREFIX)/lib/gcc/$(TARGET)/$($(PKG)_VERSION)/'libgomp.dll.a \
+            '$(PREFIX)/$(TARGET)/lib/'; \
+        cp '$(PREFIX)/lib/gcc/$(TARGET)/$($(PKG)_VERSION)/'libgomp.la \
+            '$(PREFIX)/$(TARGET)/lib/')
 
     '$(TARGET)-gcc' \
         -W -Wall -Werror -ansi -pedantic \

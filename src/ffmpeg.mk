@@ -3,16 +3,26 @@
 
 PKG             := ffmpeg
 $(PKG)_IGNORE   :=
-$(PKG)_CHECKSUM := 743f44a71f93b14c9b26ca2424b0da8457cef4be
+$(PKG)_VERSION  := 2.7.2
+$(PKG)_CHECKSUM := b8175a9a729fc4bdbb3c196ffe84a2fca7977ff8
 $(PKG)_SUBDIR   := $(PKG)-$($(PKG)_VERSION)
 $(PKG)_FILE     := $(PKG)-$($(PKG)_VERSION).tar.bz2
 $(PKG)_URL      := http://www.ffmpeg.org/releases/$($(PKG)_FILE)
-$(PKG)_URL_2    := http://launchpad.net/ffmpeg/main/$($(PKG)_VERSION)/+download/$($(PKG)_FILE)
-$(PKG)_DEPS     := gcc bzip2 lame libvpx opencore-amr sdl speex theora vorbis x264 xvidcore zlib
+$(PKG)_URL_2    := http://launchpad.net/ffmpeg/$(call SHORT_PKG_VERSION,$(PKG))/$($(PKG)_VERSION)/+download/$($(PKG)_FILE)
+$(PKG)_DEPS     := gcc bzip2 gnutls lame libass libbluray libbs2b libcaca \
+                   libvpx opencore-amr opus sdl speex theora vidstab \
+                   vo-aacenc vo-amrwbenc vorbis x264 xvidcore yasm zlib
+
+# DO NOT ADD fdk-aac OR openssl SUPPORT.
+# Although they are free softwares, their licenses are not compatible with
+# the GPL, and we'd like to enable GPL in our default ffmpeg build.
+# See index.html#potential-legal-issues
 
 define $(PKG)_UPDATE
-    wget -q -O- 'http://www.ffmpeg.org/download.html' | \
+    $(WGET) -q -O- 'http://ffmpeg.org/releases/' | \
     $(SED) -n 's,.*ffmpeg-\([0-9][^>]*\)\.tar.*,\1,p' | \
+    grep -v 'alpha\|beta\|rc\|git' | \
+    $(SORT) -Vr | \
     head -1
 endef
 
@@ -20,30 +30,41 @@ define $(PKG)_BUILD
     cd '$(1)' && ./configure \
         --cross-prefix='$(TARGET)'- \
         --enable-cross-compile \
-        --arch=i686 \
+        --arch=$(firstword $(subst -, ,$(TARGET))) \
         --target-os=mingw32 \
         --prefix='$(PREFIX)/$(TARGET)' \
-        --disable-shared \
+        $(if $(BUILD_STATIC), \
+            --enable-static --disable-shared , \
+            --disable-static --enable-shared ) \
+        --yasmexe='$(TARGET)-yasm' \
         --disable-debug \
-        --disable-doc \
         --enable-memalign-hack \
-        --enable-gpl \
-        --enable-version3 \
-        --disable-nonfree \
-        --enable-postproc \
         --disable-pthreads \
         --enable-w32threads \
+        --disable-doc \
+        --enable-avresample \
+        --enable-gpl \
+        --enable-version3 \
+        --extra-libs='-mconsole' \
         --enable-avisynth \
-        --enable-libspeex \
-        --enable-libtheora \
-        --enable-libvorbis \
+        --enable-gnutls \
+        --enable-libass \
+        --enable-libbluray \
+        --enable-libbs2b \
+        --enable-libcaca \
         --enable-libmp3lame \
-        --enable-libxvid \
-        --disable-libfaac \
         --enable-libopencore-amrnb \
         --enable-libopencore-amrwb \
+        --enable-libopus \
+        --enable-libspeex \
+        --enable-libtheora \
+        --enable-libvidstab \
+        --enable-libvo-aacenc \
+        --enable-libvo-amrwbenc \
+        --enable-libvorbis \
+        --enable-libvpx \
         --enable-libx264 \
-        --enable-libvpx
+        --enable-libxvid
     $(MAKE) -C '$(1)' -j '$(JOBS)'
     $(MAKE) -C '$(1)' -j 1 install
 endef

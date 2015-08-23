@@ -3,30 +3,31 @@
 
 PKG             := dbus
 $(PKG)_IGNORE   :=
-$(PKG)_CHECKSUM := 3140ea452337d664dbe6d30f0d990c756d101694
+$(PKG)_VERSION  := 1.9.20
+$(PKG)_CHECKSUM := a80fafb0252c6fc17ff7498ad7d4d7cdd7e715a4
 $(PKG)_SUBDIR   := $(PKG)-$($(PKG)_VERSION)
 $(PKG)_FILE     := $(PKG)-$($(PKG)_VERSION).tar.gz
 $(PKG)_URL      := http://$(PKG).freedesktop.org/releases/$(PKG)/$($(PKG)_FILE)
 $(PKG)_DEPS     := gcc expat
 
 define $(PKG)_UPDATE
-    wget -q -O- 'http://cgit.freedesktop.org/dbus/dbus/refs/tags' | \
-    $(SED) -n "s,.*<a href='[^']*/tag/?id=[^0-9]*\\([0-9][^']*\\)'.*,\\1,p" | \
-    grep -v '^1\.[01234]\.' | \
-    head -1
+    $(WGET) -q -O- 'http://cgit.freedesktop.org/dbus/dbus/refs/tags' | \
+    $(SED) -n "s,.*<a href='[^']*/tag/?id=dbus-\\([0-9][^']*\\)'.*,\\1,p" | \
+    $(SORT) -V | \
+    tail -1
 endef
 
 define $(PKG)_BUILD
     cd '$(1)' && ./configure \
-        --host='$(TARGET)' \
-        --build="`config.guess`" \
-        --prefix='$(PREFIX)/$(TARGET)' \
-        --with-xml=expat \
+        $(MXE_CONFIGURE_OPTS) \
         --disable-tests \
         --disable-verbose-mode \
         --disable-asserts \
-        --disable-shared \
-        --enable-static \
-        --disable-silent-rules
+        --disable-maintainer-mode \
+        --disable-silent-rules \
+        --disable-launchd \
+        --disable-doxygen-docs \
+        --disable-xml-docs \
+        CFLAGS='-DPROCESS_QUERY_LIMITED_INFORMATION=0x1000'
     $(MAKE) -C '$(1)' -j '$(JOBS)' install
 endef

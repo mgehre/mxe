@@ -3,14 +3,15 @@
 
 PKG             := graphicsmagick
 $(PKG)_IGNORE   :=
-$(PKG)_CHECKSUM := 7ef5711a18da0a3b6b143548a2a7822597ea416d
+$(PKG)_VERSION  := 1.3.21
+$(PKG)_CHECKSUM := bd3c543520b810999348e52d4abad6b59069f78b
 $(PKG)_SUBDIR   := GraphicsMagick-$($(PKG)_VERSION)
-$(PKG)_FILE     := GraphicsMagick-$($(PKG)_VERSION).tar.bz2
+$(PKG)_FILE     := GraphicsMagick-$($(PKG)_VERSION).tar.xz
 $(PKG)_URL      := http://$(SOURCEFORGE_MIRROR)/project/$(PKG)/$(PKG)/$($(PKG)_VERSION)/$($(PKG)_FILE)
-$(PKG)_DEPS     := gcc pthreads libtool zlib bzip2 jpeg jasper lcms1 libpng tiff freetype libxml2
+$(PKG)_DEPS     := gcc pthreads libltdl zlib bzip2 jpeg jasper lcms libpng tiff freetype libxml2 libgomp
 
 define $(PKG)_UPDATE
-    wget -q -O- 'http://sourceforge.net/projects/graphicsmagick/files/graphicsmagick/' | \
+    $(WGET) -q -O- 'http://sourceforge.net/projects/graphicsmagick/files/graphicsmagick/' | \
     $(SED) -n 's,.*/\([0-9][^"]*\)/".*,\1,p' | \
     head -1
 endef
@@ -19,9 +20,7 @@ define $(PKG)_BUILD
     # This can be removed once the patch "graphicsmagick-1-fix-xml2-config.patch" is accepted by upstream
     cd '$(1)' && autoconf
     cd '$(1)' && ./configure \
-        --host='$(TARGET)' \
-        --disable-shared \
-        --prefix='$(PREFIX)/$(TARGET)' \
+         $(MXE_CONFIGURE_OPTS) \
         --without-modules \
         --with-threads \
         --with-magick-plus-plus \
@@ -33,7 +32,7 @@ define $(PKG)_BUILD
         --without-jbig \
         --with-jpeg \
         --with-jp2 \
-        --with-lcms \
+        --with-lcms2 \
         --with-png \
         --with-tiff \
         --without-trio \
@@ -43,12 +42,13 @@ define $(PKG)_BUILD
         --with-zlib \
         --without-x \
         ac_cv_prog_xml2_config='$(PREFIX)/$(TARGET)/bin/xml2-config' \
-        ac_cv_path_xml2_config='$(PREFIX)/$(TARGET)/bin/xml2-config'
+        ac_cv_path_xml2_config='$(PREFIX)/$(TARGET)/bin/xml2-config' \
+        LIBS='-lgomp -fopenmp'
     $(MAKE) -C '$(1)' -j '$(JOBS)' bin_PROGRAMS=
     $(MAKE) -C '$(1)' -j 1 install bin_PROGRAMS=
 
     '$(TARGET)-g++' \
         -W -Wall -Werror -pedantic -std=gnu++0x \
         '$(2).cpp' -o '$(PREFIX)/$(TARGET)/bin/test-graphicsmagick.exe' \
-        `'$(TARGET)-pkg-config' GraphicsMagick++ --cflags --libs`
+        `'$(TARGET)-pkg-config' GraphicsMagick++ --cflags --libs` -llzma
 endef

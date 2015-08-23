@@ -3,50 +3,49 @@
 
 PKG             := vmime
 $(PKG)_IGNORE   :=
-$(PKG)_CHECKSUM := 3e8dd8855e423db438d465777efeb523c4abb5f3
-$(PKG)_SUBDIR   := lib$(PKG)-$($(PKG)_VERSION)
-$(PKG)_FILE     := lib$(PKG)-$($(PKG)_VERSION).tar.bz2
-$(PKG)_URL      := http://$(SOURCEFORGE_MIRROR)/project/$(PKG)/$(PKG)/$(call SHORT_PKG_VERSION,$(PKG))/$($(PKG)_FILE)
-$(PKG)_DEPS     := gcc libiconv gnutls libgsasl pthreads zlib
+$(PKG)_VERSION  := 7e36a74
+$(PKG)_CHECKSUM := 5adf8d78f3741cc13b44646e8abdf4082716022a
+$(PKG)_SUBDIR   := kisli-vmime-$($(PKG)_VERSION)
+$(PKG)_FILE     := $(PKG)-$($(PKG)_VERSION).tar.gz
+$(PKG)_URL      := https://github.com/kisli/vmime/tarball/$($(PKG)_VERSION)/$($(PKG)_FILE)
+$(PKG)_DEPS     := gcc gnutls libgsasl pthreads zlib
 
-define $(PKG)_UPDATE
-    wget -q -O- 'http://sourceforge.net/projects/vmime/files/vmime/' | \
-    $(SED) -n 's,.*libvmime-\([0-9][^>]*\)\.tar.*,\1,p' | \
-    tail -1
-endef
+$(PKG)_UPDATE    = $(call MXE_GET_GITHUB_SHA, kisli/vmime, master)
 
 define $(PKG)_BUILD
-    # The configure script will make the real configuration, but
-    # we need scons to generate configure.in, Makefile.am etc.
-    # ansi and pedantic are too strict for mingw.
-    # http://sourceforge.net/tracker/index.php?func=detail&aid=2373234&group_id=2435&atid=102435
-    $(SED) -i "s/'-ansi', //;"                        '$(1)/SConstruct'
-    $(SED) -i "s/'-pedantic', //;"                    '$(1)/SConstruct'
-    $(SED) -i 's/pkg-config/$(TARGET)-pkg-config/g;'  '$(1)/SConstruct'
+    # The following hint is probably needed for ICU:
+    # -DICU_LIBRARIES="`'$(TARGET)-pkg-config' --libs-only-l icu-i18n`"
 
-    cd '$(1)' && scons autotools \
-         prefix='$(PREFIX)/$(TARGET)' \
-         target='$(TARGET)' \
-         sendmail_path=/sbin/sendmail
-
-    cd '$(1)' && ./bootstrap
-    cd '$(1)' && ./configure \
-        --prefix='$(PREFIX)/$(TARGET)' \
-        --host='$(TARGET)' \
-        --disable-shared \
-        --enable-platform-windows \
-        --disable-rpath \
-        --disable-dependency-tracking
-
-    # Disable VMIME_HAVE_MLANG_H
-    # We have the header, but there is no implementation for IMultiLanguage in MinGW
-    $(SED) -i 's,^#define VMIME_HAVE_MLANG_H 1$$,,' '$(1)/vmime/config.hpp'
+    cd '$(1)' && cmake \
+        -DCMAKE_TOOLCHAIN_FILE='$(CMAKE_TOOLCHAIN_FILE)' \
+        -DCMAKE_AR='$(PREFIX)/bin/$(TARGET)-ar' \
+        -DCMAKE_RANLIB='$(PREFIX)/bin/$(TARGET)-ranlib' \
+        -DVMIME_HAVE_MESSAGING_PROTO_SENDMAIL=False \
+        -DVMIME_HAVE_MLANG_H=False \
+        -DCMAKE_CXX_FLAGS='-DWINVER=0x0501 -DAI_ADDRCONFIG=0x0400 -DIPV6_V6ONLY=27' \
+        -DVMIME_BUILD_STATIC_LIBRARY=$(if $(BUILD_STATIC),ON,OFF) \
+        -DVMIME_BUILD_SHARED_LIBRARY=$(if $(BUILD_SHARED),ON,OFF) \
+        -DVMIME_BUILD_SAMPLES=OFF \
+        -DVMIME_BUILD_DOCUMENTATION=OFF \
+        -DCMAKE_MODULE_PATH='$(1)/cmake' \
+        -DVMIME_CHARSETCONV_LIB_IS_ICONV=OFF \
+        -DVMIME_CHARSETCONV_LIB_IS_ICU=OFF \
+        -DVMIME_CHARSETCONV_LIB_IS_WIN=ON \
+        -DVMIME_TLS_SUPPORT_LIB_IS_GNUTLS=ON \
+        -DVMIME_TLS_SUPPORT_LIB_IS_OPENSSL=OFF \
+        -DVMIME_SHARED_PTR_USE_CXX=ON \
+        -DCXX11_COMPILER_FLAGS=ON \
+        -C../../src/vmime-TryRunResults.cmake \
+        .
 
     $(MAKE) -C '$(1)' -j '$(JOBS)'
+    $(SED) -i 's,^\(Libs.private:.* \)$(PREFIX)/$(TARGET)/lib/libiconv\.a,\1-liconv,g' $(1)/vmime.pc
+    $(if $(BUILD_STATIC),$(SED) -i 's/^\(Cflags:.* \)/\1 -DVMIME_STATIC /g' $(1)/vmime.pc)
     $(MAKE) -C '$(1)' install
+    $(if $(BUILD_SHARED),$(INSTALL) -m644 '$(1)/build/bin/libvmime.dll' '$(PREFIX)/$(TARGET)/bin/')
 
     $(SED) -i 's/posix/windows/g;' '$(1)/examples/example6.cpp'
-    $(TARGET)-g++ -s -o '$(1)/examples/test-vmime.exe' \
+    $(TARGET)-g++ -s -std=c++0x -o '$(1)/examples/test-vmime.exe' \
         '$(1)/examples/example6.cpp' \
         `'$(TARGET)-pkg-config' vmime --cflags --libs`
     $(INSTALL) -m755 '$(1)/examples/test-vmime.exe' '$(PREFIX)/$(TARGET)/bin/'

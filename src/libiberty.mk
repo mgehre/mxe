@@ -3,6 +3,7 @@
 
 PKG             := libiberty
 $(PKG)_IGNORE    = $(binutils_IGNORE)
+$(PKG)_VERSION   = $(binutils_VERSION)
 $(PKG)_CHECKSUM  = $(binutils_CHECKSUM)
 $(PKG)_SUBDIR    = $(binutils_SUBDIR)/libiberty
 $(PKG)_FILE      = $(binutils_FILE)
@@ -29,3 +30,5 @@ define $(PKG)_BUILD
         '$(2).c' -o '$(PREFIX)/$(TARGET)/bin/test-libiberty.exe' \
         -I$(PREFIX)/$(TARGET)/include/libiberty -liberty
 endef
+
+$(PKG)_BUILD_SHARED =

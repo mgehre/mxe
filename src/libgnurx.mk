@@ -3,6 +3,7 @@
 
 PKG             := libgnurx
 $(PKG)_IGNORE   :=
+$(PKG)_VERSION  := 2.5.1
 $(PKG)_CHECKSUM := f1e4af2541645dac82362b618aaa849658cd4988
 $(PKG)_SUBDIR   := mingw-libgnurx-$($(PKG)_VERSION)
 $(PKG)_FILE     := mingw-libgnurx-$($(PKG)_VERSION)-src.tar.gz
@@ -10,10 +11,10 @@ $(PKG)_URL      := http://$(SOURCEFORGE_MIRROR)/project/mingw/Other/UserContribu
 $(PKG)_DEPS     := gcc
 
 define $(PKG)_UPDATE
-    wget -q -O- 'http://sourceforge.net/projects/mingw/files/Other/UserContributed/regex/' | \
+    $(WGET) -q -O- 'http://sourceforge.net/projects/mingw/files/Other/UserContributed/regex/' | \
     grep 'mingw-regex-' | \
     $(SED) -n 's,.*mingw-regex-\([0-9\.]*\).*,\1,p' | \
-    sort | \
+    $(SORT) | \
     uniq | \
     tail -1
 endef
@@ -22,5 +23,7 @@ define $(PKG)_BUILD
     cd '$(1)' && ./configure \
         --host='$(TARGET)' \
         --prefix='$(PREFIX)/$(TARGET)'
-    $(MAKE) -C '$(1)' -f Makefile.mxe -j '$(JOBS)' TARGET=$(TARGET) bin_PROGRAMS= sbin_PROGRAMS= noinst_PROGRAMS= install-static
+    $(MAKE) -C '$(1)' -f Makefile.mxe -j '$(JOBS)' \
+        $(if $(BUILD_STATIC),install-static,install-shared) \
+        TARGET=$(TARGET) bin_PROGRAMS= sbin_PROGRAMS= noinst_PROGRAMS=
 endef

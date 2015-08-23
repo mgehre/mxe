@@ -2,16 +2,27 @@
 # See index.html for further information.
 
 PKG             := gcc-mpc
-$(PKG)_IGNORE   :=
-$(PKG)_CHECKSUM := 229722d553030734d49731844abfef7617b64f1a
-$(PKG)_SUBDIR   := mpc-$($(PKG)_VERSION)
-$(PKG)_FILE     := mpc-$($(PKG)_VERSION).tar.gz
-$(PKG)_URL      := http://www.multiprecision.org/mpc/download/$($(PKG)_FILE)
-$(PKG)_URL_2    := http://ftp.debian.org/debian/pool/main/m/mpclib/mpclib_$($(PKG)_VERSION).orig.tar.gz
-$(PKG)_DEPS     :=
+$(PKG)_IGNORE    = $(mpc_IGNORE)
+$(PKG)_VERSION   = $(mpc_VERSION)
+$(PKG)_CHECKSUM  = $(mpc_CHECKSUM)
+$(PKG)_SUBDIR    = $(mpc_SUBDIR)
+$(PKG)_FILE      = $(mpc_FILE)
+$(PKG)_URL       = $(mpc_URL)
+$(PKG)_URL_2     = $(mpc_URL_2)
+$(PKG)_DEPS     := gcc-gmp gcc-mpfr
 
 define $(PKG)_UPDATE
-    wget -q --no-check-certificate -O- 'https://gforge.inria.fr/scm/viewvc.php/tags/?root=mpc&sortby=date' | \
-    $(SED) -n 's,.*<a name="\([0-9][^"]*\)".*,\1,p' | \
-    head -1
+    echo $(mpc_VERSION)
 endef
+
+define $(PKG)_BUILD
+    mkdir '$(1).build'
+    cd    '$(1).build' && '$(1)/configure' \
+        --prefix='$(PREFIX)' \
+        --disable-shared \
+        --with-gmp='$(PREFIX)'
+    $(MAKE) -C '$(1).build' -j '$(JOBS)'
+    $(MAKE) -C '$(1).build' -j 1 install
+endef
+
+$(PKG)_BUILD_$(BUILD) =
